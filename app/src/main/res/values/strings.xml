@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">MyNote</string>
+    <string name="action_settings">Settings</string>
+    <string name="drawer_open">Menu Open</string>
+    <string name="drawer_close">Menu Close</string>
+    <string name="title_activity_view_note">ViewNoteActivity</string>
+    <string name="title_activity_edit_note">EditNoteActivity</string>
+</resources>
