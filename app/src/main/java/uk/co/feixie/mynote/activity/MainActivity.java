@@ -1,12 +1,15 @@
 package uk.co.feixie.mynote.activity;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
@@ -31,8 +34,10 @@ import java.util.List;
 
 import uk.co.feixie.mynote.R;
 import uk.co.feixie.mynote.db.DbHelper;
+import uk.co.feixie.mynote.fragment.MyDialogFragment;
 import uk.co.feixie.mynote.model.Note;
 import uk.co.feixie.mynote.utils.DateUtils;
+import uk.co.feixie.mynote.utils.UIUtils;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -45,6 +50,17 @@ public class MainActivity extends AppCompatActivity {
     private DbHelper mDbHelper;
     private ImageView ivToolbar;
     private BitmapUtils mBitmapUtils;
+    private Note clickedNote;
+    private boolean toggle;
+    public boolean isToggle() {
+        return toggle;
+    }
+
+    public void setToggle(boolean toggle) {
+        this.toggle = toggle;
+    }
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -107,10 +123,58 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Note note = mNoteList.get(position);
+
                 note.setId(mNoteList.size() - position);
                 Intent intent = new Intent(MainActivity.this, ViewNoteActivity.class);
                 intent.putExtra("note", note);
                 startActivity(intent);
+            }
+        });
+
+        lvMainContent.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+//                Snackbar.make(view,"onLongClick",Snackbar.LENGTH_SHORT).show();
+                final Note note = mNoteList.get(position);
+                note.setId(mNoteList.size() - position);
+                setClickedNote(note);
+//                MyDialogFragment dialogFragment = new MyDialogFragment();
+//                dialogFragment.show(getSupportFragmentManager(), "dialogFragment");
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setItems(new CharSequence[]{"Edit","Delete"}, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        // The 'which' argument contains the index position
+                        // of the selected item
+                        if (which==0) {
+                            Intent intent = new Intent(MainActivity.this, EditNoteActivity.class);
+                            intent.putExtra("note",note);
+                            startActivity(intent);
+                        }
+
+                        if (which==1) {
+                            DbHelper dbHelper = new DbHelper(MainActivity.this);
+                            System.out.println(note.getId());
+                            boolean delete = dbHelper.delete(note);
+                            if (delete) {
+                                UIUtils.showToast(MainActivity.this, "Delete Success.");
+                                mNoteList.remove(note);
+                                mAdapter.notifyDataSetChanged();
+                            } else {
+                                UIUtils.showToast(MainActivity.this, "Delete Fail.");
+                            }
+
+                        }
+                    }
+                });
+                builder.show();
+
+                if (isToggle()) {
+                    mNoteList.remove(note);
+                    mAdapter.notifyDataSetChanged();
+                    setToggle(false);
+                }
+                return true;
             }
         });
 
@@ -198,19 +262,52 @@ public class MainActivity extends AppCompatActivity {
 
         Intent intentShortcut = new Intent();
         intentShortcut.setAction("uk.co.fei.shortcut");
-        intent.putExtra(Intent.EXTRA_SHORTCUT_INTENT,intentShortcut);
+        intent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, intentShortcut);
 
         sendBroadcast(intent);
 
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        System.out.println("onStart");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        System.out.println("onResume");
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        System.out.println("onPause");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        System.out.println("onStop");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        System.out.println("onDestroy");
+    }
+
+    @Override
     protected void onRestart() {
         super.onRestart();
+        System.out.println("onRestart");
         mNoteList = mDbHelper.queryAll();
         sortList(mNoteList);
         mAdapter.notifyDataSetChanged();
     }
+
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -242,6 +339,14 @@ public class MainActivity extends AppCompatActivity {
 //        }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    public Note getClickedNote() {
+        return clickedNote;
+    }
+
+    public void setClickedNote(Note clickedNote) {
+        this.clickedNote = clickedNote;
     }
 
     public class MyListAdapter extends BaseAdapter {
