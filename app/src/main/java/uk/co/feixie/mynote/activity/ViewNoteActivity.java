@@ -20,6 +20,8 @@ import android.widget.VideoView;
 
 import com.lidroid.xutils.BitmapUtils;
 
+import cn.sharesdk.framework.ShareSDK;
+import cn.sharesdk.onekeyshare.OnekeyShare;
 import uk.co.feixie.mynote.R;
 import uk.co.feixie.mynote.db.DbHelper;
 import uk.co.feixie.mynote.model.Note;
@@ -29,7 +31,7 @@ import uk.co.feixie.mynote.utils.UIUtils;
 public class ViewNoteActivity extends AppCompatActivity {
 
     public static final int VIEW_REQUEST_CODE = 123;
-    private TextView tvTitle,tvContent;
+    private TextView tvTitle, tvContent;
     private Note mNote;
     private ImageView ivShowPhoto;
     private VideoView vvViewVideo;
@@ -55,8 +57,8 @@ public class ViewNoteActivity extends AppCompatActivity {
             public void onClick(View view) {
 //                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
 //                        .setAction("Action", null).show();
-                Intent intent = new Intent(ViewNoteActivity.this,EditNoteActivity.class);
-                intent.putExtra("note",mNote);
+                Intent intent = new Intent(ViewNoteActivity.this, EditNoteActivity.class);
+                intent.putExtra("note", mNote);
                 startActivityForResult(intent, VIEW_REQUEST_CODE);
             }
         });
@@ -67,11 +69,10 @@ public class ViewNoteActivity extends AppCompatActivity {
     }
 
 
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode==VIEW_REQUEST_CODE && resultCode==RESULT_OK) {
+        if (requestCode == VIEW_REQUEST_CODE && resultCode == RESULT_OK) {
             Note note = (Note) data.getSerializableExtra("request_note");
             tvTitle.setText(note.getTitle());
             tvContent.setText(note.getContent());
@@ -92,16 +93,16 @@ public class ViewNoteActivity extends AppCompatActivity {
 //            Bitmap bitmap = BitmapUtil.getBitmapLocal(ViewNoteActivity.this, Uri.parse(imagePath));
 //            ivShowPhoto.setImageBitmap(bitmap);
             BitmapUtils bitmapUtils = new BitmapUtils(this);
-            bitmapUtils.display(ivShowPhoto,imagePath);
+            bitmapUtils.display(ivShowPhoto, imagePath);
             ivShowPhoto.setVisibility(View.VISIBLE);
         }
 
         vvViewVideo = (VideoView) findViewById(R.id.vvViewVideo);
         String videoPath = mNote.getVideoPath();
-        if (!TextUtils.isEmpty(videoPath)){
+        if (!TextUtils.isEmpty(videoPath)) {
             vvViewVideo.setVideoURI(Uri.parse(videoPath));
             vvViewVideo.setVisibility(View.VISIBLE);
-            if (!vvViewVideo.isPlaying()){
+            if (!vvViewVideo.isPlaying()) {
                 vvViewVideo.start();
             }
         }
@@ -132,7 +133,7 @@ public class ViewNoteActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_view_note,menu);
+        getMenuInflater().inflate(R.menu.menu_view_note, menu);
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -142,16 +143,54 @@ public class ViewNoteActivity extends AppCompatActivity {
             case android.R.id.home:
                 finish();
                 break;
+            case R.id.action_bar_share:
+                showShare();
+                break;
             case R.id.action_bar_delete:
                 DbHelper dbHelper = new DbHelper(this);
                 boolean isDeleted = dbHelper.delete(mNote);
                 if (isDeleted) {
                     finish();
                 } else {
-                    Snackbar.make(tvContent,"Delete Failed!",Snackbar.LENGTH_SHORT).show();
+                    Snackbar.make(tvContent, "Delete Failed!", Snackbar.LENGTH_SHORT).show();
                 }
                 break;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void showShare() {
+        ShareSDK.initSDK(this);
+        OnekeyShare oks = new OnekeyShare();
+        //关闭sso授权
+        oks.disableSSOWhenAuthorize();
+
+        // title标题：微信、QQ（新浪微博不需要标题）
+        String title = mNote.getTitle();
+        oks.setTitle(title);  //最多30个字符
+
+        // text是分享文本：所有平台都需要这个字段
+        String content = mNote.getContent();
+        oks.setText(content);  //最多40个字符
+
+        // imagePath是图片的本地路径：除Linked-In以外的平台都支持此参数
+        //oks.setImagePath(Environment.getExternalStorageDirectory() + "/meinv.jpg");//确保SDcard下面存在此张图片
+        String imagePath = mNote.getImagePath();
+        if (!TextUtils.isEmpty(imagePath)) {
+            String rawImagePath = Uri.parse(imagePath).getPath();
+            oks.setImagePath(rawImagePath);
+        }
+
+        //网络图片的url：所有平台
+        //oks.setImageUrl("http://7sby7r.com1.z0.glb.clouddn.com/CYSJ_02.jpg");//网络图片rul
+
+        // url：仅在微信（包括好友和朋友圈）中使用
+//        oks.setUrl("http://sharesdk.cn");   //网友点进链接后，可以看到分享的详情
+
+        // Url：仅在QQ空间使用
+//        oks.setTitleUrl("http://www.baidu.com");  //网友点进链接后，可以看到分享的详情
+
+        // 启动分享GUI
+        oks.show(this);
     }
 }
