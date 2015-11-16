@@ -6,8 +6,6 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -17,14 +15,14 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.VideoView;
 
-import java.io.Serializable;
+import com.lidroid.xutils.BitmapUtils;
 
 import uk.co.feixie.mynote.R;
 import uk.co.feixie.mynote.db.DbHelper;
 import uk.co.feixie.mynote.model.Note;
-import uk.co.feixie.mynote.utils.BitmapUtils;
-import uk.co.feixie.mynote.utils.DateUtils;
+import uk.co.feixie.mynote.utils.BitmapUtil;
 import uk.co.feixie.mynote.utils.UIUtils;
 
 public class EditNoteActivity extends AppCompatActivity {
@@ -32,6 +30,7 @@ public class EditNoteActivity extends AppCompatActivity {
     private Note mNote;
     private EditText etEditTitle,etEditContent;
     private ImageView ivEditPhoto;
+    private VideoView vvEditVideo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,9 +57,19 @@ public class EditNoteActivity extends AppCompatActivity {
         ivEditPhoto = (ImageView) findViewById(R.id.ivEditPhoto);
         String imagePath = mNote.getImagePath();
         if (!TextUtils.isEmpty(imagePath)) {
-            Bitmap bitmap = BitmapUtils.getBitmapLocal(EditNoteActivity.this, Uri.parse(imagePath));
-            ivEditPhoto.setImageBitmap(bitmap);
+//            Bitmap bitmap = BitmapUtil.getBitmapLocal(EditNoteActivity.this, Uri.parse(imagePath));
+//            ivEditPhoto.setImageBitmap(bitmap);
+            BitmapUtils bitmapUtils = new BitmapUtils(this);
+            bitmapUtils.display(ivEditPhoto,imagePath);
             ivEditPhoto.setVisibility(View.VISIBLE);
+        }
+
+        vvEditVideo = (VideoView) findViewById(R.id.vvEditVideo);
+        String videoPath = mNote.getVideoPath();
+        if (!TextUtils.isEmpty(videoPath)){
+            vvEditVideo.setVideoURI(Uri.parse(videoPath));
+            vvEditVideo.setVisibility(View.VISIBLE);
+            vvEditVideo.start();
         }
     }
 

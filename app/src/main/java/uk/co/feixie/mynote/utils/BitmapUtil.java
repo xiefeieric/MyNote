@@ -11,7 +11,7 @@ import java.io.FileNotFoundException;
 /**
  * Created by Fei on 15/11/2015.
  */
-public class BitmapUtils {
+public class BitmapUtil {
 
     public static Bitmap getBitmapLocal(Activity activity,Uri uri) {
         Bitmap pic = null;

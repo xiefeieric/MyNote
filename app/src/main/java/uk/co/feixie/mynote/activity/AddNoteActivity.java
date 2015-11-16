@@ -23,6 +23,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.VideoView;
+
+import com.lidroid.xutils.BitmapUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -42,8 +45,11 @@ public class AddNoteActivity extends AppCompatActivity {
     private EditText etTitle, etContent;
     private static final int SPEECH_REQUEST_CODE = 0;
     private static final int REQUEST_IMAGE_CAPTURE = 1;
+    private static final int REQUEST_VIDEO_CAPTURE = 2;
     private String mCurrentPhotoPath;
+    private String mCurrentVideoPath;
     private ImageView ivAddPhoto;
+    private VideoView vvAddVideo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +70,7 @@ public class AddNoteActivity extends AppCompatActivity {
 
         etTitle = (EditText) findViewById(R.id.etTitle);
         ivAddPhoto = (ImageView) findViewById(R.id.ivAddPhoto);
+        vvAddVideo = (VideoView) findViewById(R.id.vvAddVideo);
 
         etContent = (EditText) findViewById(R.id.etContent);
         etContent.requestFocus();
@@ -107,6 +114,7 @@ public class AddNoteActivity extends AppCompatActivity {
                 break;
             case R.id.action_bar_video:
                 UIUtils.showToast(this, "video");
+                dispatchTakeVideoIntent();
                 break;
         }
         return super.onOptionsItemSelected(item);
@@ -134,6 +142,11 @@ public class AddNoteActivity extends AppCompatActivity {
         if (!TextUtils.isEmpty(mCurrentPhotoPath)) {
 //            System.out.println(mCurrentPhotoPath);
             note.setImagePath(mCurrentPhotoPath);
+        }
+
+        if (!TextUtils.isEmpty(mCurrentVideoPath)) {
+//            System.out.println(mCurrentPhotoPath);
+            note.setVideoPath(mCurrentVideoPath);
         }
 
         dbHelper.add(note);
@@ -166,6 +179,13 @@ public class AddNoteActivity extends AppCompatActivity {
                         Uri.fromFile(photoFile));
                 startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
             }
+        }
+    }
+
+    private void dispatchTakeVideoIntent() {
+        Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+        if (takeVideoIntent.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(takeVideoIntent, REQUEST_VIDEO_CAPTURE);
         }
     }
 
@@ -235,12 +255,22 @@ public class AddNoteActivity extends AppCompatActivity {
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
 //            Bundle extras = data.getExtras();
 //            Bitmap imageBitmap = (Bitmap) extras.get("data");
-            Uri uri = Uri.parse(mCurrentPhotoPath);
-            Bitmap imageBitmap = getBitmap(uri);
+//            Uri uri = Uri.parse(mCurrentPhotoPath);
+//            Bitmap imageBitmap = getBitmap(uri);
 //            mImageView.setImageBitmap(imageBitmap);
             //insertIntoEditText(getBitmapMime(imageBitmap,uri));
-            ivAddPhoto.setImageBitmap(imageBitmap);
+            BitmapUtils bitmapUtils = new BitmapUtils(this);
+            bitmapUtils.display(ivAddPhoto,mCurrentPhotoPath);
+//            ivAddPhoto.setImageBitmap(imageBitmap);
             ivAddPhoto.setVisibility(View.VISIBLE);
+        }
+
+        if (requestCode == REQUEST_VIDEO_CAPTURE && resultCode == RESULT_OK) {
+            Uri videoUri = data.getData();
+            mCurrentVideoPath = videoUri.toString();
+            vvAddVideo.setVisibility(View.VISIBLE);
+            vvAddVideo.setVideoURI(videoUri);
+            vvAddVideo.start();
 
         }
 

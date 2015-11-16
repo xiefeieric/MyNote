@@ -1,13 +1,11 @@
 package uk.co.feixie.mynote.activity;
 
 import android.content.Intent;
-import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -19,11 +17,12 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import com.lidroid.xutils.BitmapUtils;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -33,12 +32,9 @@ import java.util.Date;
 import java.util.List;
 
 import uk.co.feixie.mynote.R;
-import uk.co.feixie.mynote.db.DB;
 import uk.co.feixie.mynote.db.DbHelper;
 import uk.co.feixie.mynote.model.Note;
-import uk.co.feixie.mynote.utils.BitmapUtils;
 import uk.co.feixie.mynote.utils.DateUtils;
-import uk.co.feixie.mynote.utils.UIUtils;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -226,25 +222,25 @@ public class MainActivity extends AppCompatActivity {
 
             String imagePath = note.getImagePath();
             if (!TextUtils.isEmpty(imagePath)) {
-//                Bitmap bitmap = BitmapUtils.getBitmapLocal(MainActivity.this, Uri.parse(imagePath));
-                Bitmap bitmap = null;
-                try {
-                    bitmap = BitmapFactory.decodeStream(getContentResolver()
-                            .openInputStream(Uri.parse(imagePath)));
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
-                holder.ivPhoto.setImageBitmap(bitmap);
+//                Bitmap bitmap = BitmapUtil.getBitmapLocal(MainActivity.this, Uri.parse(imagePath));
+//                Bitmap bitmap = null;
+                BitmapUtils bitmapUtils = new BitmapUtils(MainActivity.this);
+                bitmapUtils.display(holder.ivPhoto,imagePath);
+//                    bitmap = BitmapFactory.decodeStream(getContentResolver()
+//                            .openInputStream(Uri.parse(imagePath)));
+//                holder.ivPhoto.setImageBitmap(bitmap);
                 holder.ivPhoto.setVisibility(View.VISIBLE);
+            } else {
+                holder.ivPhoto.setVisibility(View.GONE);
             }
 
             return convertView;
         }
+    }
 
-        public class ViewHolder {
-            TextView tvNoteTitle;
-            TextView tvNoteContent;
-            ImageView ivPhoto;
-        }
+    static class ViewHolder {
+        TextView tvNoteTitle;
+        TextView tvNoteContent;
+        ImageView ivPhoto;
     }
 }

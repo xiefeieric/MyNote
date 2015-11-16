@@ -5,22 +5,24 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.VideoView;
 
-import java.io.Serializable;
+import com.lidroid.xutils.BitmapUtils;
 
 import uk.co.feixie.mynote.R;
 import uk.co.feixie.mynote.model.Note;
-import uk.co.feixie.mynote.utils.BitmapUtils;
+import uk.co.feixie.mynote.utils.BitmapUtil;
+import uk.co.feixie.mynote.utils.UIUtils;
 
 public class ViewNoteActivity extends AppCompatActivity {
 
@@ -28,6 +30,7 @@ public class ViewNoteActivity extends AppCompatActivity {
     private TextView tvTitle,tvContent;
     private Note mNote;
     private ImageView ivShowPhoto;
+    private VideoView vvViewVideo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,8 +60,11 @@ public class ViewNoteActivity extends AppCompatActivity {
         });
 
         initViews();
+        initListeners();
 
     }
+
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -71,18 +77,49 @@ public class ViewNoteActivity extends AppCompatActivity {
     }
 
     private void initViews() {
+
         tvTitle = (TextView) findViewById(R.id.tvTitle);
         tvTitle.setText(mNote.getTitle());
+
         tvContent = (TextView) findViewById(R.id.tvContent);
         tvContent.setText(mNote.getContent());
-        ivShowPhoto = (ImageView) findViewById(R.id.ivShowPhoto);
 
+        ivShowPhoto = (ImageView) findViewById(R.id.ivShowPhoto);
         String imagePath = mNote.getImagePath();
         if (!TextUtils.isEmpty(imagePath)) {
-            Bitmap bitmap = BitmapUtils.getBitmapLocal(ViewNoteActivity.this, Uri.parse(imagePath));
-            ivShowPhoto.setImageBitmap(bitmap);
+//            Bitmap bitmap = BitmapUtil.getBitmapLocal(ViewNoteActivity.this, Uri.parse(imagePath));
+//            ivShowPhoto.setImageBitmap(bitmap);
+            BitmapUtils bitmapUtils = new BitmapUtils(this);
+            bitmapUtils.display(ivShowPhoto,imagePath);
             ivShowPhoto.setVisibility(View.VISIBLE);
         }
+
+        vvViewVideo = (VideoView) findViewById(R.id.vvViewVideo);
+        String videoPath = mNote.getVideoPath();
+        if (!TextUtils.isEmpty(videoPath)){
+            vvViewVideo.setVideoURI(Uri.parse(videoPath));
+            vvViewVideo.setVisibility(View.VISIBLE);
+            if (!vvViewVideo.isPlaying()){
+                vvViewVideo.start();
+            }
+        }
+    }
+
+    private void initListeners() {
+
+        vvViewVideo.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_UP:
+                        if (!vvViewVideo.isPlaying()) {
+                            vvViewVideo.start();
+                        }
+                        break;
+                }
+                return true;
+            }
+        });
     }
 
     @Override
