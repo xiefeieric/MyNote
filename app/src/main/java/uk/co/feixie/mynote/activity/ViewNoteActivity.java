@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -20,6 +21,7 @@ import android.widget.VideoView;
 import com.lidroid.xutils.BitmapUtils;
 
 import uk.co.feixie.mynote.R;
+import uk.co.feixie.mynote.db.DbHelper;
 import uk.co.feixie.mynote.model.Note;
 import uk.co.feixie.mynote.utils.BitmapUtil;
 import uk.co.feixie.mynote.utils.UIUtils;
@@ -139,6 +141,15 @@ public class ViewNoteActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             case android.R.id.home:
                 finish();
+                break;
+            case R.id.action_bar_delete:
+                DbHelper dbHelper = new DbHelper(this);
+                boolean isDeleted = dbHelper.delete(mNote);
+                if (isDeleted) {
+                    finish();
+                } else {
+                    Snackbar.make(tvContent,"Delete Failed!",Snackbar.LENGTH_SHORT).show();
+                }
                 break;
         }
         return super.onOptionsItemSelected(item);
