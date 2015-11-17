@@ -12,7 +12,10 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -51,15 +54,6 @@ public class MainActivity extends AppCompatActivity {
     private ImageView ivToolbar;
     private BitmapUtils mBitmapUtils;
     private Note clickedNote;
-    private boolean toggle;
-    public boolean isToggle() {
-        return toggle;
-    }
-
-    public void setToggle(boolean toggle) {
-        this.toggle = toggle;
-    }
-
 
 
     @Override
@@ -123,8 +117,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Note note = mNoteList.get(position);
-
-                note.setId(mNoteList.size() - position);
                 Intent intent = new Intent(MainActivity.this, ViewNoteActivity.class);
                 intent.putExtra("note", note);
                 startActivity(intent);
@@ -136,25 +128,24 @@ public class MainActivity extends AppCompatActivity {
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
 //                Snackbar.make(view,"onLongClick",Snackbar.LENGTH_SHORT).show();
                 final Note note = mNoteList.get(position);
-                note.setId(mNoteList.size() - position);
                 setClickedNote(note);
 //                MyDialogFragment dialogFragment = new MyDialogFragment();
 //                dialogFragment.show(getSupportFragmentManager(), "dialogFragment");
 
                 AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                builder.setItems(new CharSequence[]{"Edit","Delete"}, new DialogInterface.OnClickListener() {
+                builder.setItems(new CharSequence[]{"Edit", "Delete"}, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
                         // The 'which' argument contains the index position
                         // of the selected item
-                        if (which==0) {
+                        if (which == 0) {
                             Intent intent = new Intent(MainActivity.this, EditNoteActivity.class);
-                            intent.putExtra("note",note);
+                            intent.putExtra("note", note);
                             startActivity(intent);
                         }
 
-                        if (which==1) {
+                        if (which == 1) {
                             DbHelper dbHelper = new DbHelper(MainActivity.this);
-                            System.out.println(note.getId());
+//                            System.out.println(note.getId());
                             boolean delete = dbHelper.delete(note);
                             if (delete) {
                                 UIUtils.showToast(MainActivity.this, "Delete Success.");
@@ -169,11 +160,6 @@ public class MainActivity extends AppCompatActivity {
                 });
                 builder.show();
 
-                if (isToggle()) {
-                    mNoteList.remove(note);
-                    mAdapter.notifyDataSetChanged();
-                    setToggle(false);
-                }
                 return true;
             }
         });
@@ -269,39 +255,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onStart() {
-        super.onStart();
-        System.out.println("onStart");
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        System.out.println("onResume");
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        System.out.println("onPause");
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        System.out.println("onStop");
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        System.out.println("onDestroy");
-    }
-
-    @Override
     protected void onRestart() {
         super.onRestart();
-        System.out.println("onRestart");
         mNoteList = mDbHelper.queryAll();
         sortList(mNoteList);
         mAdapter.notifyDataSetChanged();
@@ -382,9 +337,19 @@ public class MainActivity extends AppCompatActivity {
 
             Note note = mNoteList.get(position);
             holder.tvNoteTitle.setText(note.getTitle());
-            String time = "[" + note.getTime() + "]";
+            String time = note.getTime();
+
+            //reformat date to "dd/mm/yyyy"
+            Date date = DateUtils.stringToDate(time);
+            SimpleDateFormat fomatter = new SimpleDateFormat("dd/MM/yyyy");
+            String newTime = fomatter.format(date);
+
             String content = note.getContent();
-            holder.tvNoteContent.setText(time + content);
+            String newContent = newTime+" "+content;
+            //change time's color in textview
+            SpannableStringBuilder style = new SpannableStringBuilder(newContent);
+            style.setSpan(new ForegroundColorSpan(getResources().getColor(R.color.jikelv)),0,newTime.length(), Spanned.SPAN_EXCLUSIVE_INCLUSIVE);
+            holder.tvNoteContent.setText(style);
 
             String imagePath = note.getImagePath();
             if (!TextUtils.isEmpty(imagePath)) {
