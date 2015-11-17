@@ -1,14 +1,19 @@
 package uk.co.feixie.mynote.activity;
 
+import android.app.Dialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.Geocoder;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.speech.RecognizerIntent;
+import android.support.v4.os.ResultReceiver;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -23,8 +28,13 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Toast;
 import android.widget.VideoView;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.drive.Drive;
+import com.google.android.gms.location.LocationServices;
 import com.lidroid.xutils.BitmapUtils;
 
 import java.io.File;
@@ -37,9 +47,15 @@ import java.util.List;
 import uk.co.feixie.mynote.R;
 import uk.co.feixie.mynote.db.DbHelper;
 import uk.co.feixie.mynote.model.Note;
+import uk.co.feixie.mynote.service.FetchAddressIntentService;
+import uk.co.feixie.mynote.utils.Constants;
 import uk.co.feixie.mynote.utils.UIUtils;
 
-public class AddNoteActivity extends AppCompatActivity {
+import static com.google.android.gms.common.GooglePlayServicesUtil.getErrorDialog;
+import static com.google.android.gms.common.GooglePlayServicesUtil.isGooglePlayServicesAvailable;
+
+public class AddNoteActivity extends AppCompatActivity implements
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     private Toolbar mToolbarAddNote;
     private EditText etTitle, etContent;
@@ -51,14 +67,64 @@ public class AddNoteActivity extends AppCompatActivity {
     private ImageView ivAddPhoto;
     private VideoView vvAddVideo;
 
+    //Google address
+    private GoogleApiClient mGoogleApiClient;
+    protected Location mLastLocation;
+    private boolean mAddressRequested;
+    private AddressResultReceiver mResultReceiver;
+    private String mAddressOutput;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_note);
         initViews();
         initListeners();
+        buildGoogleApiClient();
     }
 
+    protected void startIntentService() {
+        Intent intent = new Intent(this, FetchAddressIntentService.class);
+        mResultReceiver = new AddressResultReceiver(null);
+        intent.putExtra(Constants.RECEIVER, mResultReceiver);
+        intent.putExtra(Constants.LOCATION_DATA_EXTRA, mLastLocation);
+        startService(intent);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mGoogleApiClient.connect();
+
+        // Only start the service to fetch the address if GoogleApiClient is
+        // connected.
+        if (mGoogleApiClient.isConnected() && mLastLocation != null) {
+            startIntentService();
+        }
+        mAddressRequested = true;
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        mGoogleApiClient.disconnect();
+    }
+
+    protected synchronized void buildGoogleApiClient() {
+        int available = isGooglePlayServicesAvailable(this);
+        if (available == ConnectionResult.SUCCESS) {
+
+            mGoogleApiClient = new GoogleApiClient.Builder(this)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+//                    .addApi(LocationServices.API)
+                    .addApiIfAvailable(LocationServices.API)
+                    .build();
+
+        } else {
+            getErrorDialog(available, this, 123).show();
+        }
+    }
 
     private void initViews() {
         mToolbarAddNote = (Toolbar) findViewById(R.id.toolbarAddNote);
@@ -100,7 +166,7 @@ public class AddNoteActivity extends AppCompatActivity {
                 finish();
                 break;
             case R.id.action_bar_voice:
-                UIUtils.showToast(this, "voice");
+//                UIUtils.showToast(this, "voice");
                 try {
                     displaySpeechRecognizer();
                 } catch (ActivityNotFoundException e) {
@@ -109,11 +175,11 @@ public class AddNoteActivity extends AppCompatActivity {
                 }
                 break;
             case R.id.action_bar_photo:
-                UIUtils.showToast(this, "photo");
+//                UIUtils.showToast(this, "photo");
                 dispatchTakePictureIntent();
                 break;
             case R.id.action_bar_video:
-                UIUtils.showToast(this, "video");
+//                UIUtils.showToast(this, "video");
                 dispatchTakeVideoIntent();
                 break;
         }
@@ -127,11 +193,16 @@ public class AddNoteActivity extends AppCompatActivity {
 //        List<Note> noteList = dbHelper.queryAll();
 //        note.setId(noteList.size()+1);
         String title = etTitle.getText().toString();
-        String capital = title;
-        if (!TextUtils.isEmpty(title)){
-            capital = title.subSequence(0,1).toString().toUpperCase()+title.substring(1);
+        String capital;
+        if (!TextUtils.isEmpty(title)) {
+            capital = title.subSequence(0, 1).toString().toUpperCase() + title.substring(1);
+            note.setTitle(capital);
+        } else if (!TextUtils.isEmpty(mAddressOutput)) {
+            note.setTitle("Note@"+mAddressOutput);
+        } else {
+            note.setTitle(title);
         }
-        note.setTitle(capital);
+
         String content = etContent.getText().toString();
         note.setContent(content);
 
@@ -171,7 +242,7 @@ public class AddNoteActivity extends AppCompatActivity {
                 photoFile = createImageFile();
             } catch (IOException ex) {
                 // Error occurred while creating the File
-                UIUtils.showToast(this,"Photo save error!");
+                UIUtils.showToast(this, "Photo save error!");
             }
             // Continue only if the File was successfully created
             if (photoFile != null) {
@@ -208,6 +279,7 @@ public class AddNoteActivity extends AppCompatActivity {
 
     /**
      * 通过路径获取系统图片
+     *
      * @param uri
      * @return
      */
@@ -260,7 +332,7 @@ public class AddNoteActivity extends AppCompatActivity {
 //            mImageView.setImageBitmap(imageBitmap);
             //insertIntoEditText(getBitmapMime(imageBitmap,uri));
             BitmapUtils bitmapUtils = new BitmapUtils(this);
-            bitmapUtils.display(ivAddPhoto,mCurrentPhotoPath);
+            bitmapUtils.display(ivAddPhoto, mCurrentPhotoPath);
 //            ivAddPhoto.setImageBitmap(imageBitmap);
             ivAddPhoto.setVisibility(View.VISIBLE);
         }
@@ -288,7 +360,7 @@ public class AddNoteActivity extends AppCompatActivity {
 //        pic = Bitmap.createBitmap(pic, 0, 0, imgWidth, imgHeight, mx, true);
 //        String smile = uri.getPath();
         String smile = "-";
-        SpannableString ss = new SpannableString(smile+"\n");
+        SpannableString ss = new SpannableString(smile + "\n");
         ImageSpan span = new ImageSpan(this, pic);
         ss.setSpan(span, 0, smile.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 //        ss.setSpan(span, 0, 3, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -314,6 +386,73 @@ public class AddNoteActivity extends AppCompatActivity {
             UIUtils.showToast(this, "Cannot save an empty note");
         } else {
             saveNote();
+        }
+    }
+
+    //google service callbacks
+    @Override
+    public void onConnected(Bundle bundle) {
+
+        // Gets the best and most recent location currently available,
+        // which may be null in rare cases when a location is not available.
+        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
+                mGoogleApiClient);
+
+        if (mLastLocation != null) {
+            // Determine whether a Geocoder is available.
+            if (!Geocoder.isPresent()) {
+                UIUtils.showToast(this,"No Geocode available");
+                return;
+            }
+
+            if (mAddressRequested) {
+                startIntentService();
+            }
+        }
+
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+
+    }
+
+
+
+    public class AddressResultReceiver extends ResultReceiver {
+
+
+
+        public AddressResultReceiver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        protected void onReceiveResult(int resultCode, Bundle resultData) {
+
+            // Display the address string
+            // or an error message sent from the intent service.
+            mAddressOutput = resultData.getString(Constants.RESULT_DATA_KEY);
+//            displayAddressOutput();
+//            System.out.println("address: "+mAddressOutput);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    etTitle.setHint("Note@"+mAddressOutput);
+                }
+            });
+
+
+            // Show a toast message if an address was found.
+            if (resultCode == Constants.SUCCESS_RESULT) {
+                UIUtils.showToast(AddNoteActivity.this,"Address found");
+            }
+
         }
     }
 }
