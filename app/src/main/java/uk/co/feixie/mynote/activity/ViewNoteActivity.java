@@ -1,7 +1,10 @@
 package uk.co.feixie.mynote.activity;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -9,7 +12,10 @@ import android.support.design.widget.Snackbar;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -146,14 +152,30 @@ public class ViewNoteActivity extends AppCompatActivity {
             case R.id.action_bar_share:
                 showShare();
                 break;
+            case R.id.action_bar_map:
+                Intent intent = new Intent(this,MapsNoteActivity.class);
+                intent.putExtra("latitude",mNote.getLatitude());
+                intent.putExtra("longitude",mNote.getLongitude());
+                startActivity(intent);
+                break;
             case R.id.action_bar_delete:
-                DbHelper dbHelper = new DbHelper(this);
-                boolean isDeleted = dbHelper.delete(mNote);
-                if (isDeleted) {
-                    finish();
-                } else {
-                    Snackbar.make(tvContent, "Delete Failed!", Snackbar.LENGTH_SHORT).show();
-                }
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setMessage("Are you sure you want to delete?");
+                builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        DbHelper dbHelper = new DbHelper(ViewNoteActivity.this);
+                        boolean isDeleted = dbHelper.delete(mNote);
+                        if (isDeleted) {
+                            finish();
+                        } else {
+                            Snackbar.make(tvContent, "Delete Failed!", Snackbar.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+                builder.setNegativeButton("Cancel",null);
+                builder.show();
                 break;
         }
         return super.onOptionsItemSelected(item);
