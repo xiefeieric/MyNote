@@ -73,6 +73,7 @@ public class AddNoteActivity extends AppCompatActivity implements
     private boolean mAddressRequested;
     private AddressResultReceiver mResultReceiver;
     private String mAddressOutput;
+    private int mAvailable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,25 +95,30 @@ public class AddNoteActivity extends AppCompatActivity implements
     @Override
     protected void onStart() {
         super.onStart();
-        mGoogleApiClient.connect();
+        if (mAvailable==ConnectionResult.SUCCESS) {
+            mGoogleApiClient.connect();
 
-        // Only start the service to fetch the address if GoogleApiClient is
-        // connected.
-        if (mGoogleApiClient.isConnected() && mLastLocation != null) {
-            startIntentService();
+            // Only start the service to fetch the address if GoogleApiClient is
+            // connected.
+            if (mGoogleApiClient.isConnected() && mLastLocation != null) {
+                startIntentService();
+            }
+            mAddressRequested = true;
         }
-        mAddressRequested = true;
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        mGoogleApiClient.disconnect();
+        if (mAvailable==ConnectionResult.SUCCESS) {
+            mGoogleApiClient.disconnect();
+        }
     }
 
     protected synchronized void buildGoogleApiClient() {
-        int available = isGooglePlayServicesAvailable(this);
-        if (available == ConnectionResult.SUCCESS) {
+        mAvailable = isGooglePlayServicesAvailable(this);
+        System.out.println(mAvailable);
+        if (mAvailable == ConnectionResult.SUCCESS) {
 
             mGoogleApiClient = new GoogleApiClient.Builder(this)
                     .addConnectionCallbacks(this)
@@ -122,7 +128,7 @@ public class AddNoteActivity extends AppCompatActivity implements
                     .build();
 
         } else {
-            getErrorDialog(available, this, 123).show();
+            getErrorDialog(mAvailable, this, 123).show();
         }
     }
 
@@ -158,7 +164,8 @@ public class AddNoteActivity extends AppCompatActivity implements
         switch (item.getItemId()) {
             case android.R.id.home:
 //                UIUtils.showToast(this, "save");
-                if (TextUtils.isEmpty(etTitle.getText().toString()) && TextUtils.isEmpty(etContent.getText().toString())) {
+                if (TextUtils.isEmpty(etTitle.getText().toString()) && TextUtils.isEmpty(etContent.getText().toString())
+                        && ivAddPhoto==null && vvAddVideo==null) {
                     UIUtils.showToast(this, "Cannot save an empty note");
                 } else {
                     saveNote();
@@ -198,7 +205,12 @@ public class AddNoteActivity extends AppCompatActivity implements
             capital = title.subSequence(0, 1).toString().toUpperCase() + title.substring(1);
             note.setTitle(capital);
         } else if (!TextUtils.isEmpty(mAddressOutput)) {
-            note.setTitle("Note@"+mAddressOutput);
+            if (!TextUtils.isEmpty(etContent.getText().toString())) {
+                note.setTitle("Note@"+mAddressOutput);
+            } else {
+                note.setTitle("Snapshot@"+mAddressOutput);
+            }
+
         } else {
             note.setTitle(title);
         }
@@ -218,6 +230,11 @@ public class AddNoteActivity extends AppCompatActivity implements
         if (!TextUtils.isEmpty(mCurrentVideoPath)) {
 //            System.out.println(mCurrentPhotoPath);
             note.setVideoPath(mCurrentVideoPath);
+        }
+
+        if (mLastLocation!=null) {
+            note.setLatitude(String.valueOf(mLastLocation.getLatitude()));
+            note.setLongitude(String.valueOf(mLastLocation.getLongitude()));
         }
 
         dbHelper.add(note);
@@ -382,7 +399,8 @@ public class AddNoteActivity extends AppCompatActivity implements
     public void onBackPressed() {
         super.onBackPressed();
 //        UIUtils.showToast(this,"back pressed");
-        if (TextUtils.isEmpty(etTitle.getText().toString()) && TextUtils.isEmpty(etContent.getText().toString())) {
+        if (TextUtils.isEmpty(etTitle.getText().toString()) && TextUtils.isEmpty(etContent.getText().toString())
+                && ivAddPhoto==null && vvAddVideo==null) {
             UIUtils.showToast(this, "Cannot save an empty note");
         } else {
             saveNote();
@@ -450,7 +468,7 @@ public class AddNoteActivity extends AppCompatActivity implements
 
             // Show a toast message if an address was found.
             if (resultCode == Constants.SUCCESS_RESULT) {
-                UIUtils.showToast(AddNoteActivity.this,"Address found");
+//                UIUtils.showToast(AddNoteActivity.this,"Address found");
             }
 
         }
