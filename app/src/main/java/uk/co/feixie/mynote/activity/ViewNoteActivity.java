@@ -79,9 +79,25 @@ public class ViewNoteActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == VIEW_REQUEST_CODE && resultCode == RESULT_OK) {
-            Note note = (Note) data.getSerializableExtra("request_note");
-            tvTitle.setText(note.getTitle());
-            tvContent.setText(note.getContent());
+//            Note note = (Note) data.getSerializableExtra("request_note");
+            mNote = (Note) data.getSerializableExtra("request_note");
+            tvTitle.setText(mNote.getTitle());
+            tvContent.setText(mNote.getContent());
+            String imagePath = mNote.getImagePath();
+//            System.out.println("imagePath: " + imagePath);
+            if (!TextUtils.isEmpty(imagePath)) {
+                BitmapUtils bitmapUtils = new BitmapUtils(this);
+                bitmapUtils.display(ivShowPhoto, imagePath);
+                ivShowPhoto.setVisibility(View.VISIBLE);
+            }
+            String videoPath = mNote.getVideoPath();
+            if (!TextUtils.isEmpty(videoPath)) {
+                vvViewVideo.setVideoURI(Uri.parse(videoPath));
+                vvViewVideo.setVisibility(View.VISIBLE);
+                if (!vvViewVideo.isPlaying()) {
+                    vvViewVideo.start();
+                }
+            }
         }
     }
 
@@ -96,8 +112,6 @@ public class ViewNoteActivity extends AppCompatActivity {
         ivShowPhoto = (ImageView) findViewById(R.id.ivShowPhoto);
         String imagePath = mNote.getImagePath();
         if (!TextUtils.isEmpty(imagePath)) {
-//            Bitmap bitmap = BitmapUtil.getBitmapLocal(ViewNoteActivity.this, Uri.parse(imagePath));
-//            ivShowPhoto.setImageBitmap(bitmap);
             BitmapUtils bitmapUtils = new BitmapUtils(this);
             bitmapUtils.display(ivShowPhoto, imagePath);
             ivShowPhoto.setVisibility(View.VISIBLE);
@@ -153,9 +167,9 @@ public class ViewNoteActivity extends AppCompatActivity {
                 showShare();
                 break;
             case R.id.action_bar_map:
-                Intent intent = new Intent(this,MapsNoteActivity.class);
-                intent.putExtra("latitude",mNote.getLatitude());
-                intent.putExtra("longitude",mNote.getLongitude());
+                Intent intent = new Intent(this, MapsNoteActivity.class);
+                intent.putExtra("latitude", mNote.getLatitude());
+                intent.putExtra("longitude", mNote.getLongitude());
                 startActivity(intent);
                 break;
             case R.id.action_bar_delete:
@@ -174,7 +188,7 @@ public class ViewNoteActivity extends AppCompatActivity {
                         }
                     }
                 });
-                builder.setNegativeButton("Cancel",null);
+                builder.setNegativeButton("Cancel", null);
                 builder.show();
                 break;
         }
