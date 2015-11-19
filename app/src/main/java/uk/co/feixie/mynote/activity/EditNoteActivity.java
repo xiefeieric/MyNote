@@ -1,11 +1,15 @@
 package uk.co.feixie.mynote.activity;
 
 import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.speech.RecognizerIntent;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -19,6 +23,14 @@ import android.widget.VideoView;
 
 import com.lidroid.xutils.BitmapUtils;
 
+import org.w3c.dom.Text;
+
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+
 import uk.co.feixie.mynote.R;
 import uk.co.feixie.mynote.db.DbHelper;
 import uk.co.feixie.mynote.model.Note;
@@ -28,15 +40,26 @@ import uk.co.feixie.mynote.utils.UIUtils;
 public class EditNoteActivity extends AppCompatActivity {
 
     private Note mNote;
-    private EditText etEditTitle,etEditContent;
+    private EditText etEditTitle, etEditContent;
     private ImageView ivEditPhoto;
     private VideoView vvEditVideo;
+
+    private static final int SPEECH_REQUEST_CODE = 0;
+    private static final int REQUEST_IMAGE_CAPTURE = 1;
+    private static final int REQUEST_VIDEO_CAPTURE = 2;
+
+    private String mCurrentPhotoPath;
+    private String mCurrentVideoPath;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_note);
         mNote = (Note) getIntent().getSerializableExtra("note");
+
+        System.out.println("video: " + mNote.getVideoPath());
+
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -52,7 +75,15 @@ public class EditNoteActivity extends AppCompatActivity {
         etEditTitle = (EditText) findViewById(R.id.etEditTitle);
         etEditTitle.setText(mNote.getTitle());
         etEditContent = (EditText) findViewById(R.id.etEditContent);
-        etEditContent.setText(mNote.getContent());
+        etEditContent.setFocusable(true);
+        etEditContent.setFocusableInTouchMode(true);
+        String content = mNote.getContent();
+        if (TextUtils.isEmpty(content)) {
+            etEditContent.setHint("Compose your note");
+        } else {
+            etEditContent.setText(content);
+        }
+
 
         ivEditPhoto = (ImageView) findViewById(R.id.ivEditPhoto);
         String imagePath = mNote.getImagePath();
@@ -60,13 +91,13 @@ public class EditNoteActivity extends AppCompatActivity {
 //            Bitmap bitmap = BitmapUtil.getBitmapLocal(EditNoteActivity.this, Uri.parse(imagePath));
 //            ivEditPhoto.setImageBitmap(bitmap);
             BitmapUtils bitmapUtils = new BitmapUtils(this);
-            bitmapUtils.display(ivEditPhoto,imagePath);
+            bitmapUtils.display(ivEditPhoto, imagePath);
             ivEditPhoto.setVisibility(View.VISIBLE);
         }
 
         vvEditVideo = (VideoView) findViewById(R.id.vvEditVideo);
         String videoPath = mNote.getVideoPath();
-        if (!TextUtils.isEmpty(videoPath)){
+        if (!TextUtils.isEmpty(videoPath)) {
             vvEditVideo.setVideoURI(Uri.parse(videoPath));
             vvEditVideo.setVisibility(View.VISIBLE);
             vvEditVideo.start();
@@ -84,26 +115,95 @@ public class EditNoteActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+
         switch (item.getItemId()) {
+
             case android.R.id.home:
 
                 newTitle = etEditTitle.getText().toString();
                 newContent = etEditContent.getText().toString();
 
-                if (!(newTitle.equals(mNote.getTitle()) && newContent.equals(mNote.getContent()))) {
+                if (!(TextUtils.equals(newTitle, mNote.getTitle()) && TextUtils.equals(newContent, mNote.getContent())
+                        && TextUtils.isEmpty(mCurrentPhotoPath) && TextUtils.isEmpty(mCurrentVideoPath))) {
                     mNote.setTitle(newTitle);
                     mNote.setContent(newContent);
-                    System.out.println(mNote.getId());
+//                    System.out.println(mNote.getId());
+                    if (!TextUtils.equals(mCurrentPhotoPath, mNote.getImagePath())) {
+                        mNote.setImagePath(mCurrentPhotoPath);
+                    }
+
+                    if (!TextUtils.equals(mCurrentVideoPath, mNote.getVideoPath())) {
+                        mNote.setVideoPath(mCurrentVideoPath);
+                    }
+
                     boolean isUpdate = saveEdit(mNote);
-                    Intent intent = new Intent();
-                    intent.putExtra("request_note", mNote);
-                    setResult(RESULT_OK, intent);
-//                    UIUtils.showToast(this, "status: "+isUpdate);
+                    if (isUpdate) {
+                        Intent intent = new Intent();
+                        intent.putExtra("request_note", mNote);
+                        setResult(RESULT_OK, intent);
+                        UIUtils.showToast(this, "Change saved");
+                    } else {
+                        UIUtils.showToast(this, "Save Failed!");
+                    }
                 }
                 finish();
                 break;
+
+            case R.id.action_bar_voice:
+//                UIUtils.showToast(this, "voice");
+                try {
+                    displaySpeechRecognizer();
+                } catch (ActivityNotFoundException e) {
+                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://market.android.com/details?id=com.google.android.googlequicksearchbox"));
+                    startActivity(browserIntent);
+                }
+                break;
+
+            case R.id.action_bar_photo:
+//                UIUtils.showToast(this, "photo");
+                dispatchTakePictureIntent();
+                break;
+
+            case R.id.action_bar_video:
+//                UIUtils.showToast(this, "video");
+                dispatchTakeVideoIntent();
+                break;
         }
+
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == SPEECH_REQUEST_CODE && resultCode == RESULT_OK) {
+            List<String> results = data.getStringArrayListExtra(
+                    RecognizerIntent.EXTRA_RESULTS);
+            String spokenText = results.get(0);
+            // Do something with spokenText
+            etEditContent.setText(spokenText);
+        }
+
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+
+//            System.out.println(mCurrentPhotoPath);
+            BitmapUtils bitmapUtils = new BitmapUtils(this);
+            bitmapUtils.display(ivEditPhoto, mCurrentPhotoPath);
+            ivEditPhoto.setVisibility(View.VISIBLE);
+        }
+
+        if (requestCode == REQUEST_VIDEO_CAPTURE && resultCode == RESULT_OK) {
+            Uri videoUri = data.getData();
+
+            System.out.println(videoUri.toString());
+            mCurrentVideoPath = videoUri.toString();
+
+            vvEditVideo.setVisibility(View.VISIBLE);
+            vvEditVideo.setVideoURI(videoUri);
+            vvEditVideo.start();
+
+        }
     }
 
     @Override
@@ -119,20 +219,17 @@ public class EditNoteActivity extends AppCompatActivity {
                 builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        UIUtils.showToast(EditNoteActivity.this,"Changes discarded");
+                        UIUtils.showToast(EditNoteActivity.this, "Changes discarded");
                         finish();
                     }
                 });
-                builder.setNegativeButton("CANCEL",null);
+                builder.setNegativeButton("CANCEL", null);
                 builder.show();
 
             } else {
                 finish();
             }
         }
-
-
-
     }
 
     private boolean saveEdit(Note note) {
@@ -141,4 +238,57 @@ public class EditNoteActivity extends AppCompatActivity {
         boolean isUpdate = dbHelper.update(note);
         return isUpdate;
     }
+
+    private void displaySpeechRecognizer() {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        // Start the activity, the intent will be populated with the speech text
+        startActivityForResult(intent, SPEECH_REQUEST_CODE);
+    }
+
+    private void dispatchTakePictureIntent() {
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        // Ensure that there's a camera activity to handle the intent
+        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+            // Create the File where the photo should go
+            File photoFile = null;
+            try {
+                photoFile = createImageFile();
+            } catch (IOException ex) {
+                // Error occurred while creating the File
+                UIUtils.showToast(this, "Photo save error!");
+            }
+            // Continue only if the File was successfully created
+            if (photoFile != null) {
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
+                        Uri.fromFile(photoFile));
+                startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+            }
+        }
+    }
+
+    private void dispatchTakeVideoIntent() {
+        Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+        if (takeVideoIntent.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(takeVideoIntent, REQUEST_VIDEO_CAPTURE);
+        }
+    }
+
+    private File createImageFile() throws IOException {
+        // Create an image file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpg",         /* suffix */
+                storageDir      /* directory */
+        );
+        // Save a file: path for use with ACTION_VIEW intents
+        mCurrentPhotoPath = "file:" + image.getAbsolutePath();
+        return image;
+    }
+
 }

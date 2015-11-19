@@ -3,9 +3,9 @@ package uk.co.feixie.mynote.activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -21,9 +21,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
 import com.lidroid.xutils.BitmapUtils;
@@ -37,7 +39,6 @@ import java.util.List;
 
 import uk.co.feixie.mynote.R;
 import uk.co.feixie.mynote.db.DbHelper;
-import uk.co.feixie.mynote.fragment.MyDialogFragment;
 import uk.co.feixie.mynote.model.Note;
 import uk.co.feixie.mynote.utils.DateUtils;
 import uk.co.feixie.mynote.utils.UIUtils;
@@ -45,6 +46,8 @@ import uk.co.feixie.mynote.utils.UIUtils;
 public class MainActivity extends AppCompatActivity {
 
     private ListView lvMainContent;
+    private ListView lvLeftMenu;
+//    private String[] leftMenu = {"All Notes"};
     private DrawerLayout dlMenu;
     private Toolbar mToolbar;
     private ActionBarDrawerToggle mDrawerToggle;
@@ -104,6 +107,12 @@ public class MainActivity extends AppCompatActivity {
         mAdapter = new MyListAdapter();
         lvMainContent.setAdapter(mAdapter);
         //lvMainContent.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, new String[]{"abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc"}));
+
+        lvLeftMenu = (ListView) findViewById(R.id.lvLeftMenu);
+        ArrayAdapter adapter = new ArrayAdapter(this,R.layout.item_list_left_menu,R.id.tvLeftMenu,new String[]{"All Notes"});
+        lvLeftMenu.setAdapter(adapter);
+        lvLeftMenu.setSelection(0);
+
 
         dlMenu = (DrawerLayout) findViewById(R.id.dlMenu);
         mDrawerToggle = new ActionBarDrawerToggle(this, dlMenu, mToolbar, R.string.drawer_open, R.string.drawer_close);
@@ -279,9 +288,9 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
+//        if (id == R.id.action_settings) {
+//            return true;
+//        }
 
         if (mDrawerToggle.onOptionsItemSelected(item)) {
             return true;

@@ -69,5 +69,12 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@color/jikelv"/>
 
+        <ListView
+            android:id="@+id/lvLeftMenu"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:divider="@null"
+            android:text="DrawerLayout" />
+
     </LinearLayout>
 </android.support.v4.widget.DrawerLayout>

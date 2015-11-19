@@ -6,7 +6,13 @@
     <item
         android:id="@+id/action_bar_share"
         android:icon="@drawable/ic_share_black_24dp"
-        android:title="Voice"
+        android:title="Share"
+        app:showAsAction="always"/>
+
+    <item
+        android:id="@+id/action_bar_map"
+        android:icon="@drawable/ic_place_black_24dp"
+        android:title="Map"
         app:showAsAction="always"/>
 
     <item
@@ -15,9 +21,9 @@
         android:title="Delete"
         app:showAsAction="always"/>
 
-    <item
-        android:id="@+id/action_settings"
-        android:orderInCategory="100"
-        android:title="@string/action_settings"
-        app:showAsAction="never"/>
+    <!--<item-->
+        <!--android:id="@+id/action_settings"-->
+        <!--android:orderInCategory="100"-->
+        <!--android:title="@string/action_settings"-->
+        <!--app:showAsAction="never"/>-->
 </menu>

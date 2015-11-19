@@ -15,5 +15,4 @@ public class DateUtils {
         Date dateValue = simpleDateFormat.parse(dateString, position);
         return dateValue;
     }
-
 }

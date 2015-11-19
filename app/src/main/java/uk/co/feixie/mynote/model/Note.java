@@ -14,11 +14,15 @@ public class Note implements Serializable {
     private String videoPath;
     private String voicePath;
     private String time;
+    private String latitude;
+    private String longitude;
+
+
 
     public Note() {
     }
 
-    public Note(int id, String title, String content, String imagePath, String videoPath, String voicePath, String time) {
+    public Note(int id, String title, String content, String imagePath, String videoPath, String voicePath, String time, String latitude, String longitude) {
         this.id = id;
         this.title = title;
         this.content = content;
@@ -26,7 +30,10 @@ public class Note implements Serializable {
         this.videoPath = videoPath;
         this.voicePath = voicePath;
         this.time = time;
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
+
 
     public int getId() {
         return id;
@@ -84,9 +91,26 @@ public class Note implements Serializable {
         this.time = time;
     }
 
+    public String getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(String latitude) {
+        this.latitude = latitude;
+    }
+
+    public String getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(String longitude) {
+        this.longitude = longitude;
+    }
+
     @Override
     public String toString() {
         return "Note{" +
+
                 "id=" + id +
                 ", title='" + title + '\'' +
                 ", content='" + content + '\'' +
@@ -94,6 +118,8 @@ public class Note implements Serializable {
                 ", videoPath='" + videoPath + '\'' +
                 ", voicePath='" + voicePath + '\'' +
                 ", time='" + time + '\'' +
+                ", latitude=" + latitude +
+                ", longitude=" + longitude +
                 '}';
     }
 }

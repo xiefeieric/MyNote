@@ -32,6 +32,8 @@ public class DbHelper {
         values.put("video",note.getVideoPath());
         values.put("voice",note.getVoicePath());
         values.put("time", note.getTime());
+        values.put("latitude", note.getLatitude());
+        values.put("longitude", note.getLongitude());
         long insertFinish = writableDatabase.insert(TABLE, null, values);
         if (insertFinish!=-1) {
             writableDatabase.close();
@@ -81,6 +83,8 @@ public class DbHelper {
         if (cursor!=null) {
             while (cursor.moveToNext()) {
                 Note note = new Note();
+                int id = cursor.getInt(cursor.getColumnIndex("_id"));
+                note.setId(id);
                 String title = cursor.getString(cursor.getColumnIndex("title"));
                 note.setTitle(title);
                 String content = cursor.getString(cursor.getColumnIndex("content"));
@@ -93,6 +97,11 @@ public class DbHelper {
                 note.setVoicePath(voicePath);
                 String time = cursor.getString(cursor.getColumnIndex("time"));
                 note.setTime(time);
+                String latitude = cursor.getString(cursor.getColumnIndex("latitude"));
+                note.setLatitude(latitude);
+                String longitude = cursor.getString(cursor.getColumnIndex("longitude"));
+                note.setLongitude(longitude);
+
                 noteList.add(note);
             }
             cursor.close();

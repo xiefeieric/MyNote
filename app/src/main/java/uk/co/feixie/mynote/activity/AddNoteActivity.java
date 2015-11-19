@@ -95,7 +95,7 @@ public class AddNoteActivity extends AppCompatActivity implements
     @Override
     protected void onStart() {
         super.onStart();
-        if (mAvailable==ConnectionResult.SUCCESS) {
+        if (mAvailable == ConnectionResult.SUCCESS) {
             mGoogleApiClient.connect();
 
             // Only start the service to fetch the address if GoogleApiClient is
@@ -110,7 +110,7 @@ public class AddNoteActivity extends AppCompatActivity implements
     @Override
     protected void onStop() {
         super.onStop();
-        if (mAvailable==ConnectionResult.SUCCESS) {
+        if (mAvailable == ConnectionResult.SUCCESS) {
             mGoogleApiClient.disconnect();
         }
     }
@@ -165,7 +165,7 @@ public class AddNoteActivity extends AppCompatActivity implements
             case android.R.id.home:
 //                UIUtils.showToast(this, "save");
                 if (TextUtils.isEmpty(etTitle.getText().toString()) && TextUtils.isEmpty(etContent.getText().toString())
-                        && ivAddPhoto==null && vvAddVideo==null) {
+                        && ivAddPhoto == null && vvAddVideo == null) {
                     UIUtils.showToast(this, "Cannot save an empty note");
                 } else {
                     saveNote();
@@ -177,7 +177,7 @@ public class AddNoteActivity extends AppCompatActivity implements
                 try {
                     displaySpeechRecognizer();
                 } catch (ActivityNotFoundException e) {
-                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://market.android.com/details?id=com.google.android.voicesearch"));
+                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://market.android.com/details?id=com.google.android.googlequicksearchbox"));
                     startActivity(browserIntent);
                 }
                 break;
@@ -206,9 +206,9 @@ public class AddNoteActivity extends AppCompatActivity implements
             note.setTitle(capital);
         } else if (!TextUtils.isEmpty(mAddressOutput)) {
             if (!TextUtils.isEmpty(etContent.getText().toString())) {
-                note.setTitle("Note@"+mAddressOutput);
+                note.setTitle("Note@" + mAddressOutput);
             } else {
-                note.setTitle("Snapshot@"+mAddressOutput);
+                note.setTitle("Snapshot@" + mAddressOutput);
             }
 
         } else {
@@ -232,7 +232,7 @@ public class AddNoteActivity extends AppCompatActivity implements
             note.setVideoPath(mCurrentVideoPath);
         }
 
-        if (mLastLocation!=null) {
+        if (mLastLocation != null) {
             note.setLatitude(String.valueOf(mLastLocation.getLatitude()));
             note.setLongitude(String.valueOf(mLastLocation.getLongitude()));
         }
@@ -288,7 +288,6 @@ public class AddNoteActivity extends AppCompatActivity implements
                 ".jpg",         /* suffix */
                 storageDir      /* directory */
         );
-
         // Save a file: path for use with ACTION_VIEW intents
         mCurrentPhotoPath = "file:" + image.getAbsolutePath();
         return image;
@@ -400,7 +399,7 @@ public class AddNoteActivity extends AppCompatActivity implements
         super.onBackPressed();
 //        UIUtils.showToast(this,"back pressed");
         if (TextUtils.isEmpty(etTitle.getText().toString()) && TextUtils.isEmpty(etContent.getText().toString())
-                && ivAddPhoto==null && vvAddVideo==null) {
+                && ivAddPhoto == null && vvAddVideo == null) {
             UIUtils.showToast(this, "Cannot save an empty note");
         } else {
             saveNote();
@@ -419,7 +418,7 @@ public class AddNoteActivity extends AppCompatActivity implements
         if (mLastLocation != null) {
             // Determine whether a Geocoder is available.
             if (!Geocoder.isPresent()) {
-                UIUtils.showToast(this,"No Geocode available");
+                UIUtils.showToast(this, "No Geocode available");
                 return;
             }
 
@@ -441,9 +440,7 @@ public class AddNoteActivity extends AppCompatActivity implements
     }
 
 
-
     public class AddressResultReceiver extends ResultReceiver {
-
 
 
         public AddressResultReceiver(Handler handler) {
@@ -461,7 +458,7 @@ public class AddNoteActivity extends AppCompatActivity implements
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    etTitle.setHint("Note@"+mAddressOutput);
+                    etTitle.setHint("Note@" + mAddressOutput);
                 }
             });
 
