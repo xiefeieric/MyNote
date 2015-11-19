@@ -165,7 +165,7 @@ public class AddNoteActivity extends AppCompatActivity implements
             case android.R.id.home:
 //                UIUtils.showToast(this, "save");
                 if (TextUtils.isEmpty(etTitle.getText().toString()) && TextUtils.isEmpty(etContent.getText().toString())
-                        && ivAddPhoto == null && vvAddVideo == null) {
+                        && TextUtils.isEmpty(mCurrentPhotoPath) && TextUtils.isEmpty(mCurrentVideoPath)) {
                     UIUtils.showToast(this, "Cannot save an empty note");
                 } else {
                     saveNote();
@@ -207,7 +207,7 @@ public class AddNoteActivity extends AppCompatActivity implements
         } else if (!TextUtils.isEmpty(mAddressOutput)) {
             if (!TextUtils.isEmpty(etContent.getText().toString())) {
                 note.setTitle("Note@" + mAddressOutput);
-            } else {
+            } else if (!TextUtils.isEmpty(mCurrentPhotoPath)||!TextUtils.isEmpty(mCurrentVideoPath)){
                 note.setTitle("Snapshot@" + mAddressOutput);
             }
 
@@ -399,7 +399,7 @@ public class AddNoteActivity extends AppCompatActivity implements
         super.onBackPressed();
 //        UIUtils.showToast(this,"back pressed");
         if (TextUtils.isEmpty(etTitle.getText().toString()) && TextUtils.isEmpty(etContent.getText().toString())
-                && ivAddPhoto == null && vvAddVideo == null) {
+                && TextUtils.isEmpty(mCurrentPhotoPath) && TextUtils.isEmpty(mCurrentVideoPath)) {
             UIUtils.showToast(this, "Cannot save an empty note");
         } else {
             saveNote();

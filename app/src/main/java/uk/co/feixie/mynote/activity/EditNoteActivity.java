@@ -58,9 +58,6 @@ public class EditNoteActivity extends AppCompatActivity {
         setContentView(R.layout.activity_edit_note);
         mNote = (Note) getIntent().getSerializableExtra("note");
 
-        System.out.println("video: " + mNote.getVideoPath());
-
-
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         ActionBar supportActionBar = getSupportActionBar();
@@ -88,8 +85,6 @@ public class EditNoteActivity extends AppCompatActivity {
         ivEditPhoto = (ImageView) findViewById(R.id.ivEditPhoto);
         String imagePath = mNote.getImagePath();
         if (!TextUtils.isEmpty(imagePath)) {
-//            Bitmap bitmap = BitmapUtil.getBitmapLocal(EditNoteActivity.this, Uri.parse(imagePath));
-//            ivEditPhoto.setImageBitmap(bitmap);
             BitmapUtils bitmapUtils = new BitmapUtils(this);
             bitmapUtils.display(ivEditPhoto, imagePath);
             ivEditPhoto.setVisibility(View.VISIBLE);
@@ -123,16 +118,16 @@ public class EditNoteActivity extends AppCompatActivity {
                 newTitle = etEditTitle.getText().toString();
                 newContent = etEditContent.getText().toString();
 
-                if (!(TextUtils.equals(newTitle, mNote.getTitle()) && TextUtils.equals(newContent, mNote.getContent())
-                        && TextUtils.isEmpty(mCurrentPhotoPath) && TextUtils.isEmpty(mCurrentVideoPath))) {
+                if (!TextUtils.equals(newTitle, mNote.getTitle()) || !TextUtils.equals(newContent, mNote.getContent())
+                        || !TextUtils.isEmpty(mCurrentPhotoPath) || !TextUtils.isEmpty(mCurrentVideoPath)) {
                     mNote.setTitle(newTitle);
                     mNote.setContent(newContent);
-//                    System.out.println(mNote.getId());
-                    if (!TextUtils.equals(mCurrentPhotoPath, mNote.getImagePath())) {
+
+                    if (!TextUtils.isEmpty(mCurrentPhotoPath) && !TextUtils.equals(mCurrentPhotoPath, mNote.getImagePath())) {
                         mNote.setImagePath(mCurrentPhotoPath);
                     }
 
-                    if (!TextUtils.equals(mCurrentVideoPath, mNote.getVideoPath())) {
+                    if (!TextUtils.isEmpty(mCurrentVideoPath) && !TextUtils.equals(mCurrentVideoPath, mNote.getVideoPath())) {
                         mNote.setVideoPath(mCurrentVideoPath);
                     }
 
@@ -195,10 +190,7 @@ public class EditNoteActivity extends AppCompatActivity {
 
         if (requestCode == REQUEST_VIDEO_CAPTURE && resultCode == RESULT_OK) {
             Uri videoUri = data.getData();
-
-            System.out.println(videoUri.toString());
             mCurrentVideoPath = videoUri.toString();
-
             vvEditVideo.setVisibility(View.VISIBLE);
             vvEditVideo.setVideoURI(videoUri);
             vvEditVideo.start();
