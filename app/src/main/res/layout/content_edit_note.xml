@@ -60,6 +60,7 @@
         android:layout_marginBottom="10dp"
         android:layout_marginLeft="10dp"
         android:layout_marginRight="10dp"
+        android:autoLink="web"
         android:background="@null"
         android:focusable="true"
         android:focusableInTouchMode="true"

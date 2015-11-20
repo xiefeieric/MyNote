@@ -10,6 +10,7 @@ android {
         targetSdkVersion 22
         versionCode 1
         versionName "1.0"
+        multiDexEnabled true
     }
     buildTypes {
         release {
@@ -19,11 +20,19 @@ android {
     }
 }
 
+repositories {
+    jcenter()
+}
+
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     testCompile 'junit:junit:4.12'
+    compile files('libs/xUtils-2.6.14.jar')
+    compile project(':onekeyshare')
     compile 'com.android.support:appcompat-v7:23.1.0'
     compile 'com.android.support:design:23.1.0'
     compile 'org.xutils:xutils:3.0'
-    compile files('libs/xUtils-2.6.14.jar')
+    compile 'com.google.android.gms:play-services:8.1.0'
+    compile 'com.journeyapps:zxing-android-embedded:3.0.3@aar'
+    compile 'com.google.zxing:core:3.2.0'
 }

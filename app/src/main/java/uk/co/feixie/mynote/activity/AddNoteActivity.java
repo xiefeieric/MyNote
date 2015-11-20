@@ -35,6 +35,8 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.drive.Drive;
 import com.google.android.gms.location.LocationServices;
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
 import com.lidroid.xutils.BitmapUtils;
 
 import java.io.File;
@@ -189,6 +191,10 @@ public class AddNoteActivity extends AppCompatActivity implements
 //                UIUtils.showToast(this, "video");
                 dispatchTakeVideoIntent();
                 break;
+
+            case R.id.action_bar_qrcode:
+                scanQR();
+                break;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -238,6 +244,18 @@ public class AddNoteActivity extends AppCompatActivity implements
         }
 
         dbHelper.add(note);
+    }
+
+    private void scanQR(){
+        IntentIntegrator integrator = new IntentIntegrator(this);
+//        integrator.setDesiredBarcodeFormats(IntentIntegrator.ONE_D_CODE_TYPES);
+        integrator.setCaptureActivity(CaptureActivityAnyOrientation.class);
+        integrator.setOrientationLocked(false);
+        integrator.setPrompt("Scan a QRCode");
+//        integrator.setCameraId(0);  // Use a specific camera of the device
+        integrator.setBeepEnabled(false);
+//        integrator.setBarcodeImageEnabled(true);
+        integrator.initiateScan();
     }
 
     // Create an intent that can start the Speech Recognizer activity
@@ -360,6 +378,13 @@ public class AddNoteActivity extends AppCompatActivity implements
             vvAddVideo.setVideoURI(videoUri);
             vvAddVideo.start();
 
+        }
+
+        IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+        if (scanResult != null) {
+            // handle scan result
+            String contents = scanResult.getContents();
+            etContent.setText(contents);
         }
 
         super.onActivityResult(requestCode, resultCode, data);

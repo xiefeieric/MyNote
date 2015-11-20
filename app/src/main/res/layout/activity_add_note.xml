@@ -94,6 +94,7 @@
                 android:focusable="true"
                 android:focusableInTouchMode="true"
                 android:gravity="start"
+                android:autoLink="web"
                 android:linksClickable="true"
                 android:hint="Compose your note"
                 android:textAlignment="gravity"/>

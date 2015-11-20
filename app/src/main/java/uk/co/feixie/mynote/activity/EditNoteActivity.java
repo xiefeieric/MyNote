@@ -21,6 +21,8 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.VideoView;
 
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
 import com.lidroid.xutils.BitmapUtils;
 
 import org.w3c.dom.Text;
@@ -163,6 +165,10 @@ public class EditNoteActivity extends AppCompatActivity {
 //                UIUtils.showToast(this, "video");
                 dispatchTakeVideoIntent();
                 break;
+
+            case R.id.action_bar_qrcode:
+                scanQR();
+                break;
         }
 
         return super.onOptionsItemSelected(item);
@@ -194,8 +200,27 @@ public class EditNoteActivity extends AppCompatActivity {
             vvEditVideo.setVisibility(View.VISIBLE);
             vvEditVideo.setVideoURI(videoUri);
             vvEditVideo.start();
-
         }
+
+        IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+        if (scanResult != null) {
+            // handle scan result
+            String contents = scanResult.getContents();
+            etEditContent.setText(contents);
+        }
+
+    }
+
+    private void scanQR(){
+        IntentIntegrator integrator = new IntentIntegrator(this);
+//        integrator.setDesiredBarcodeFormats(IntentIntegrator.ONE_D_CODE_TYPES);
+        integrator.setCaptureActivity(CaptureActivityAnyOrientation.class);
+        integrator.setOrientationLocked(false);
+        integrator.setPrompt("Scan a QRCode");
+//        integrator.setCameraId(0);  // Use a specific camera of the device
+        integrator.setBeepEnabled(false);
+//        integrator.setBarcodeImageEnabled(true);
+        integrator.initiateScan();
     }
 
     @Override

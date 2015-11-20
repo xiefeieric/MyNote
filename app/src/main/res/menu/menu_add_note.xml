@@ -8,6 +8,11 @@
         android:icon="@drawable/ic_mic_black_24dp"
         android:title="Voice"
         app:showAsAction="always"/>
+    <item
+        android:id="@+id/action_bar_qrcode"
+        android:icon="@drawable/ic_aspect_ratio_black_24dp"
+        android:title="QRCode"
+        app:showAsAction="always"/>
 
     <item
         android:id="@+id/action_bar_photo"
@@ -19,6 +24,7 @@
         android:icon="@drawable/ic_videocam_black_24dp"
         android:title="Video"
         app:showAsAction="always"/>
+
 
     <!--<item-->
         <!--android:id="@+id/action_settings"-->

@@ -92,7 +92,13 @@
         <activity
             android:name=".activity.MapsNoteActivity"
             android:label="@string/title_activity_maps_note"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:theme="@style/AppTheme.NoActionBar" >
+        </activity>
+        <activity android:name=".activity.CaptureActivityAnyOrientation"
+                  android:screenOrientation="fullSensor"
+                  android:stateNotNeeded="true"
+                  android:theme="@style/zxing_CaptureTheme"
+                  android:windowSoftInputMode="stateAlwaysHidden">
         </activity>
     </application>
 
