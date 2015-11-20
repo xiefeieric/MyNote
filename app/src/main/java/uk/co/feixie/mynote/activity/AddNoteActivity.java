@@ -82,7 +82,6 @@ public class AddNoteActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_note);
         initViews();
-        initListeners();
         buildGoogleApiClient();
     }
 
@@ -119,7 +118,7 @@ public class AddNoteActivity extends AppCompatActivity implements
 
     protected synchronized void buildGoogleApiClient() {
         mAvailable = isGooglePlayServicesAvailable(this);
-        System.out.println(mAvailable);
+//        System.out.println(mAvailable);
         if (mAvailable == ConnectionResult.SUCCESS) {
 
             mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -149,10 +148,6 @@ public class AddNoteActivity extends AppCompatActivity implements
         etContent = (EditText) findViewById(R.id.etContent);
         etContent.requestFocus();
         etContent.requestFocusFromTouch();
-    }
-
-    private void initListeners() {
-
     }
 
     @Override
