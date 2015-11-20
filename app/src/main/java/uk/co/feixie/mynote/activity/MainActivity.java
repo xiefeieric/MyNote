@@ -100,13 +100,20 @@ public class MainActivity extends AppCompatActivity {
     private void initViews() {
         lvMainContent = (ListView) findViewById(R.id.lvMainContent);
         mDbHelper = new DbHelper(this);
-        mNoteList = mDbHelper.queryAll();
-        sortList(mNoteList);
-
-
-        mAdapter = new MyListAdapter();
-        lvMainContent.setAdapter(mAdapter);
-        //lvMainContent.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, new String[]{"abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc"}));
+        new Thread(){
+            @Override
+            public void run() {
+                mNoteList = mDbHelper.queryAll();
+                sortList(mNoteList);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mAdapter = new MyListAdapter();
+                        lvMainContent.setAdapter(mAdapter);
+                    }
+                });
+            }
+        }.start();
 
         lvLeftMenu = (ListView) findViewById(R.id.lvLeftMenu);
         ArrayAdapter adapter = new ArrayAdapter(this,R.layout.item_list_left_menu,R.id.tvLeftMenu,new String[]{"All Notes"});
@@ -153,20 +160,35 @@ public class MainActivity extends AppCompatActivity {
                         }
 
                         if (which == 1) {
-                            DbHelper dbHelper = new DbHelper(MainActivity.this);
+//                            DbHelper dbHelper = new DbHelper(MainActivity.this);
 //                            System.out.println(note.getId());
-                            boolean delete = dbHelper.delete(note);
-                            if (delete) {
-                                UIUtils.showToast(MainActivity.this, "Delete Success.");
-                                mNoteList.remove(note);
-                                mAdapter.notifyDataSetChanged();
-                            } else {
-                                UIUtils.showToast(MainActivity.this, "Delete Fail.");
-                            }
-
+                            new Thread(){
+                                @Override
+                                public void run() {
+                                    boolean delete = mDbHelper.delete(note);
+                                    if (delete) {
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                UIUtils.showToast(MainActivity.this, "Delete Success.");
+                                                mNoteList.remove(note);
+                                                mAdapter.notifyDataSetChanged();
+                                            }
+                                        });
+                                    } else {
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                UIUtils.showToast(MainActivity.this, "Delete Fail.");
+                                            }
+                                        });
+                                    }
+                                }
+                            }.start();
                         }
                     }
                 });
+
                 builder.show();
 
                 return true;
@@ -266,11 +288,20 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onRestart() {
         super.onRestart();
-        mNoteList = mDbHelper.queryAll();
-        sortList(mNoteList);
-        mAdapter.notifyDataSetChanged();
+        new Thread(){
+            @Override
+            public void run() {
+                mNoteList = mDbHelper.queryAll();
+                sortList(mNoteList);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mAdapter.notifyDataSetChanged();
+                    }
+                });
+            }
+        }.start();
     }
-
 
 
     @Override

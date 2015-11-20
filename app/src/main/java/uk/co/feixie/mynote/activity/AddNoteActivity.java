@@ -196,8 +196,8 @@ public class AddNoteActivity extends AppCompatActivity implements
 
     //save note to database
     private void saveNote() {
-        Note note = new Note();
-        DbHelper dbHelper = new DbHelper(this);
+        final Note note = new Note();
+        final DbHelper dbHelper = new DbHelper(this);
 //        List<Note> noteList = dbHelper.queryAll();
 //        note.setId(noteList.size()+1);
         String title = etTitle.getText().toString();
@@ -208,7 +208,7 @@ public class AddNoteActivity extends AppCompatActivity implements
         } else if (!TextUtils.isEmpty(mAddressOutput)) {
             if (!TextUtils.isEmpty(etContent.getText().toString())) {
                 note.setTitle("Note@" + mAddressOutput);
-            } else if (!TextUtils.isEmpty(mCurrentPhotoPath)||!TextUtils.isEmpty(mCurrentVideoPath)){
+            } else if (!TextUtils.isEmpty(mCurrentPhotoPath) || !TextUtils.isEmpty(mCurrentVideoPath)) {
                 note.setTitle("Snapshot@" + mAddressOutput);
             }
 
@@ -238,10 +238,15 @@ public class AddNoteActivity extends AppCompatActivity implements
             note.setLongitude(String.valueOf(mLastLocation.getLongitude()));
         }
 
-        dbHelper.add(note);
+        new Thread() {
+            @Override
+            public void run() {
+                dbHelper.add(note);
+            }
+        }.start();
     }
 
-    private void scanQR(){
+    private void scanQR() {
         IntentIntegrator integrator = new IntentIntegrator(this);
 //        integrator.setDesiredBarcodeFormats(IntentIntegrator.ONE_D_CODE_TYPES);
         integrator.setCaptureActivity(CaptureActivityAnyOrientation.class);
@@ -360,10 +365,13 @@ public class AddNoteActivity extends AppCompatActivity implements
 //            Bitmap imageBitmap = getBitmap(uri);
 //            mImageView.setImageBitmap(imageBitmap);
             //insertIntoEditText(getBitmapMime(imageBitmap,uri));
+            System.out.println("mCurrentPath: "+mCurrentPhotoPath);
             BitmapUtils bitmapUtils = new BitmapUtils(this);
             bitmapUtils.display(ivAddPhoto, mCurrentPhotoPath);
 //            ivAddPhoto.setImageBitmap(imageBitmap);
             ivAddPhoto.setVisibility(View.VISIBLE);
+        } else {
+            mCurrentPhotoPath = null;
         }
 
         if (requestCode == REQUEST_VIDEO_CAPTURE && resultCode == RESULT_OK) {
@@ -484,9 +492,9 @@ public class AddNoteActivity extends AppCompatActivity implements
 
 
             // Show a toast message if an address was found.
-            if (resultCode == Constants.SUCCESS_RESULT) {
-//                UIUtils.showToast(AddNoteActivity.this,"Address found");
-            }
+//            if (resultCode == Constants.SUCCESS_RESULT) {
+////                UIUtils.showToast(AddNoteActivity.this,"Address found");
+//            }
 
         }
     }

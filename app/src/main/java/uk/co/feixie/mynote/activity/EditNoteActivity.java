@@ -133,15 +133,21 @@ public class EditNoteActivity extends AppCompatActivity {
                         mNote.setVideoPath(mCurrentVideoPath);
                     }
 
+
                     boolean isUpdate = saveEdit(mNote);
                     if (isUpdate) {
+
                         Intent intent = new Intent();
                         intent.putExtra("request_note", mNote);
                         setResult(RESULT_OK, intent);
-                        UIUtils.showToast(this, "Change saved");
+                        UIUtils.showToast(EditNoteActivity.this, "Change saved");
+
                     } else {
-                        UIUtils.showToast(this, "Save Failed!");
+
+                        UIUtils.showToast(EditNoteActivity.this, "Save Failed!");
+
                     }
+
                 }
                 finish();
                 break;
@@ -192,6 +198,8 @@ public class EditNoteActivity extends AppCompatActivity {
             BitmapUtils bitmapUtils = new BitmapUtils(this);
             bitmapUtils.display(ivEditPhoto, mCurrentPhotoPath);
             ivEditPhoto.setVisibility(View.VISIBLE);
+        } else {
+            mCurrentPhotoPath=null;
         }
 
         if (requestCode == REQUEST_VIDEO_CAPTURE && resultCode == RESULT_OK) {
@@ -211,7 +219,7 @@ public class EditNoteActivity extends AppCompatActivity {
 
     }
 
-    private void scanQR(){
+    private void scanQR() {
         IntentIntegrator integrator = new IntentIntegrator(this);
 //        integrator.setDesiredBarcodeFormats(IntentIntegrator.ONE_D_CODE_TYPES);
         integrator.setCaptureActivity(CaptureActivityAnyOrientation.class);
