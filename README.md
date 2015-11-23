@@ -18,3 +18,5 @@ Main features:
   *Share note on Facebook, Twitter......
 
 More features will be added in the future, any feedback is more than welcome.
+
+![alt tag](https://cloud.githubusercontent.com/assets/11439385/11343262/1fbc81f8-9203-11e5-94c5-6dffb04576bc.png)
