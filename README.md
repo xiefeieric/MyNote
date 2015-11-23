@@ -20,7 +20,7 @@ Main features:
 More features will be added in the future, any feedback is more than welcome.
 <br>
 
-<a href="url"><img src="https://cloud.githubusercontent.com/assets/11439385/11343262/1fbc81f8-9203-11e5-94c5-6dffb04576bc.png" align="left" height="600" width="400" ></a><br>
+<a href="url"><img src="https://cloud.githubusercontent.com/assets/11439385/11343262/1fbc81f8-9203-11e5-94c5-6dffb04576bc.png" align="left" height="600" width="300" ></a><br>
 <a href="url"><img src="https://cloud.githubusercontent.com/assets/11439385/11343263/1fbc639e-9203-11e5-8135-3113d7712259.png" align="left" height="48" width="48" ></a><br>
 <a href="url"><img src="https://cloud.githubusercontent.com/assets/11439385/11343261/1fbc657e-9203-11e5-8938-dab1c181bbaf.png" align="left" height="48" width="48" ></a><br>
 <a href="url"><img src="https://cloud.githubusercontent.com/assets/11439385/11343265/1fbd8b02-9203-11e5-8568-8dd629de786e.png" align="left" height="48" width="48" ></a><br>
