@@ -113,4 +113,43 @@ public class DbHelper {
             return null;
         }
     }
+
+    public List<Note> queryName(String name) {
+        List<Note> noteList = new ArrayList<>();
+        SQLiteDatabase readableDatabase = mDB.getReadableDatabase();
+        Cursor cursor = readableDatabase.query(TABLE, null, "content LIKE ?", new String[]{"%"+name+"%"}, null, null, null);
+        //_id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, content TEXT, image TEXT, video TEXT, voice TEXT, time TEXT
+        if (cursor!=null) {
+            while (cursor.moveToNext()) {
+                Note note = new Note();
+                int id = cursor.getInt(cursor.getColumnIndex("_id"));
+                note.setId(id);
+                String title = cursor.getString(cursor.getColumnIndex("title"));
+                note.setTitle(title);
+                String content = cursor.getString(cursor.getColumnIndex("content"));
+                note.setContent(content);
+                String imagePath = cursor.getString(cursor.getColumnIndex("image"));
+                note.setImagePath(imagePath);
+                String videoPath = cursor.getString(cursor.getColumnIndex("video"));
+                note.setVideoPath(videoPath);
+                String voicePath = cursor.getString(cursor.getColumnIndex("voice"));
+                note.setVoicePath(voicePath);
+                String time = cursor.getString(cursor.getColumnIndex("time"));
+                note.setTime(time);
+                String latitude = cursor.getString(cursor.getColumnIndex("latitude"));
+                note.setLatitude(latitude);
+                String longitude = cursor.getString(cursor.getColumnIndex("longitude"));
+                note.setLongitude(longitude);
+
+                noteList.add(note);
+            }
+            cursor.close();
+            readableDatabase.close();
+            return noteList;
+        } else {
+            cursor.close();
+            readableDatabase.close();
+            return null;
+        }
+    }
 }

@@ -3,15 +3,15 @@
     <!--
     	说明：
     	
-    	1、表格中的第一项
+    	jan、表格中的第一项
     		<ShareSDK 
         		AppKey="api20" />
     	是必须的，其中的AppKey是您在ShareSDK上注册的开发者帐号的AppKey
     	
-    	2、所有集成到您项目的平台都应该为其在表格中填写相对应的开发者信息，以新浪微博为例：
+    	feb、所有集成到您项目的平台都应该为其在表格中填写相对应的开发者信息，以新浪微博为例：
     	    <SinaWeibo
-                Id="1"
-                SortId="1"
+                Id="jan"
+                SortId="jan"
                 AppKey="568898243"
                 AppSecret="38a4f8204cc784f81f9f0daaf31e02e3"
                 RedirectUrl="http://www.mob.com"

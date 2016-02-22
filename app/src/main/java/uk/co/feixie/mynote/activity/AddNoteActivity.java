@@ -1,6 +1,5 @@
 package uk.co.feixie.mynote.activity;
 
-import android.app.Dialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -28,12 +27,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.Toast;
 import android.widget.VideoView;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.drive.Drive;
 import com.google.android.gms.location.LocationServices;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
@@ -199,7 +196,7 @@ public class AddNoteActivity extends AppCompatActivity implements
         final Note note = new Note();
         final DbHelper dbHelper = new DbHelper(this);
 //        List<Note> noteList = dbHelper.queryAll();
-//        note.setId(noteList.size()+1);
+//        note.setId(noteList.size()+jan);
         String title = etTitle.getText().toString();
         String capital;
         if (!TextUtils.isEmpty(title)) {

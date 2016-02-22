@@ -1,9 +1,10 @@
 package uk.co.feixie.mynote.activity;
 
+import android.app.SearchManager;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.widget.DrawerLayout;
@@ -11,6 +12,7 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -25,7 +27,6 @@ import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
 import com.lidroid.xutils.BitmapUtils;
@@ -47,7 +48,6 @@ public class MainActivity extends AppCompatActivity {
 
     private ListView lvMainContent;
     private ListView lvLeftMenu;
-//    private String[] leftMenu = {"All Notes"};
     private DrawerLayout dlMenu;
     private Toolbar mToolbar;
     private ActionBarDrawerToggle mDrawerToggle;
@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageView ivToolbar;
     private BitmapUtils mBitmapUtils;
     private Note clickedNote;
+    private SearchView mSearchView;
 
 
     @Override
@@ -64,7 +65,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mNoteList = new ArrayList<>();
-//        createShortcut();
         initToolbar();
         initFloatingButton();
         initViews();
@@ -76,8 +76,7 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
+
                 Intent intent = new Intent(MainActivity.this, AddNoteActivity.class);
                 startActivity(intent);
             }
@@ -100,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
     private void initViews() {
         lvMainContent = (ListView) findViewById(R.id.lvMainContent);
         mDbHelper = new DbHelper(this);
-        new Thread(){
+        new Thread() {
             @Override
             public void run() {
                 mNoteList = mDbHelper.queryAll();
@@ -116,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
         }.start();
 
         lvLeftMenu = (ListView) findViewById(R.id.lvLeftMenu);
-        ArrayAdapter adapter = new ArrayAdapter(this,R.layout.item_list_left_menu,R.id.tvLeftMenu,new String[]{"All Notes"});
+        ArrayAdapter adapter = new ArrayAdapter(this, R.layout.item_list_left_menu, R.id.tvLeftMenu, new String[]{"All Notes"});
         lvLeftMenu.setAdapter(adapter);
         lvLeftMenu.setSelection(0);
 
@@ -162,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
                         if (which == 1) {
 //                            DbHelper dbHelper = new DbHelper(MainActivity.this);
 //                            System.out.println(note.getId());
-                            new Thread(){
+                            new Thread() {
                                 @Override
                                 public void run() {
                                     boolean delete = mDbHelper.delete(note);
@@ -288,7 +287,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onRestart() {
         super.onRestart();
-        new Thread(){
+        new Thread() {
             @Override
             public void run() {
                 mNoteList = mDbHelper.queryAll();
@@ -301,13 +300,46 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         }.start();
-    }
 
+        mSearchView.setQuery("",true);
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
+
+        // Associate searchable configuration with the SearchView
+        SearchManager searchManager =
+                (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        mSearchView = (SearchView) menu.findItem(R.id.search).getActionView();
+        mSearchView.setSearchableInfo(
+                searchManager.getSearchableInfo(getComponentName()));
+        mSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+
+//                mNoteList = mDbHelper.queryName(query);
+//                mAdapter.notifyDataSetChanged();
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+
+                if (TextUtils.isEmpty(newText)) {
+                    mNoteList = mDbHelper.queryAll();
+                    sortList(mNoteList);
+                    mAdapter.notifyDataSetChanged();
+                } else {
+                    mNoteList = mDbHelper.queryName(newText);
+                    sortList(mNoteList);
+                    mAdapter.notifyDataSetChanged();
+                }
+                return true;
+            }
+        });
+
         return true;
     }
 
@@ -319,9 +351,9 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-//        if (id == R.id.action_settings) {
-//            return true;
-//        }
+        if (id == R.id.action_settings) {
+            return true;
+        }
 
         if (mDrawerToggle.onOptionsItemSelected(item)) {
             return true;
@@ -385,10 +417,10 @@ public class MainActivity extends AppCompatActivity {
             String newTime = fomatter.format(date);
 
             String content = note.getContent();
-            String newContent = newTime+" "+content;
+            String newContent = newTime + " " + content;
             //change time's color in textview
             SpannableStringBuilder style = new SpannableStringBuilder(newContent);
-            style.setSpan(new ForegroundColorSpan(getResources().getColor(R.color.jikelv)),0,newTime.length(), Spanned.SPAN_EXCLUSIVE_INCLUSIVE);
+            style.setSpan(new ForegroundColorSpan(getResources().getColor(R.color.jikelv)), 0, newTime.length(), Spanned.SPAN_EXCLUSIVE_INCLUSIVE);
             holder.tvNoteContent.setText(style);
 
             String imagePath = note.getImagePath();
