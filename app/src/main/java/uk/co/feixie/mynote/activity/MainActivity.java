@@ -4,7 +4,6 @@ import android.app.SearchManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.widget.DrawerLayout;
@@ -23,7 +22,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -37,6 +35,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import uk.co.feixie.mynote.R;
 import uk.co.feixie.mynote.db.DbHelper;
@@ -58,6 +57,9 @@ public class MainActivity extends AppCompatActivity {
     private BitmapUtils mBitmapUtils;
     private Note clickedNote;
     private SearchView mSearchView;
+    private List<String> mCategoryList;
+    private MyCategoryAdapter mCategoryAdapter;
+    private String selectedCategory;
 
 
     @Override
@@ -65,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mNoteList = new ArrayList<>();
+        mCategoryList = new ArrayList<>();
         initToolbar();
         initFloatingButton();
         initViews();
@@ -87,40 +90,45 @@ public class MainActivity extends AppCompatActivity {
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(mToolbar);
         ActionBar actionBar = getSupportActionBar();
-        actionBar.setTitle("");
+        if (actionBar != null) {
+            actionBar.setTitle("");
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setHomeButtonEnabled(true);
+        }
 //        actionBar.setHomeAsUpIndicator(R.drawable.ic_dehaze_black_24dp);
-        actionBar.setDisplayHomeAsUpEnabled(true);
-        actionBar.setHomeButtonEnabled(true);
 
         ivToolbar = (ImageView) findViewById(R.id.ivToolbar);
         getCurrentMonthToShow();
     }
 
     private void initViews() {
+
         lvMainContent = (ListView) findViewById(R.id.lvMainContent);
+        lvLeftMenu = (ListView) findViewById(R.id.lvLeftMenu);
+        dlMenu = (DrawerLayout) findViewById(R.id.dlMenu);
+
         mDbHelper = new DbHelper(this);
         new Thread() {
             @Override
             public void run() {
                 mNoteList = mDbHelper.queryAll();
                 sortList(mNoteList);
+                mCategoryList = mDbHelper.queryAllCategory();
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         mAdapter = new MyListAdapter();
                         lvMainContent.setAdapter(mAdapter);
+
+//                        mCategoryAdapter = new ArrayAdapter(MainActivity.this, R.layout.item_list_left_menu, R.id.tvLeftMenu, mCategoryList);
+                        mCategoryAdapter = new MyCategoryAdapter();
+                        lvLeftMenu.setAdapter(mCategoryAdapter);
+                        lvLeftMenu.setItemChecked(0, true);
                     }
                 });
             }
         }.start();
 
-        lvLeftMenu = (ListView) findViewById(R.id.lvLeftMenu);
-        ArrayAdapter adapter = new ArrayAdapter(this, R.layout.item_list_left_menu, R.id.tvLeftMenu, new String[]{"All Notes"});
-        lvLeftMenu.setAdapter(adapter);
-        lvLeftMenu.setSelection(0);
-
-
-        dlMenu = (DrawerLayout) findViewById(R.id.dlMenu);
         mDrawerToggle = new ActionBarDrawerToggle(this, dlMenu, mToolbar, R.string.drawer_open, R.string.drawer_close);
         dlMenu.setDrawerListener(mDrawerToggle);
         mDrawerToggle.syncState();
@@ -194,11 +202,58 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        lvLeftMenu.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                String category = mCategoryList.get(position);
+                selectedCategory = category;
+                if (category.equalsIgnoreCase("all notes")) {
+                    mNoteList = mDbHelper.queryAll();
+                } else {
+                    mNoteList = mDbHelper.queryNoteByCategory(category);
+                }
+                sortList(mNoteList);
+                mAdapter.notifyDataSetChanged();
+                dlMenu.closeDrawers();
+            }
+        });
+
+        lvLeftMenu.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                final String category = mCategoryList.get(position);
+                if (category.equalsIgnoreCase("all notes")) {
+                    UIUtils.showToast(MainActivity.this, "Item can not be deleted");
+                } else {
+                    mNoteList = mDbHelper.queryNoteByCategory(category);
+                    if (mNoteList.size() > 0) {
+                        UIUtils.showToast(MainActivity.this, "Please delete all notes under this category first!");
+                    } else if (mCategoryList.get(position).equalsIgnoreCase(selectedCategory)) {
+                        UIUtils.showToast(MainActivity.this, "Selected category can not be deleted!");
+                    } else {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                        builder.setMessage("Are you sure you want to delete the item?");
+                        builder.setNegativeButton("Cancel", null);
+                        builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                mCategoryList.remove(category);
+                                mCategoryAdapter.notifyDataSetChanged();
+                                mDbHelper.deleteCategory(category);
+                            }
+                        });
+                        builder.show();
+                    }
+                }
+                return true;
+            }
+        });
+
     }
 
     private void getCurrentMonthToShow() {
 
-        SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+        SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
         String date = formatter.format(new Date());
         String dates[] = date.split("/");
         int month = Integer.valueOf(dates[1]);
@@ -246,9 +301,9 @@ public class MainActivity extends AppCompatActivity {
         Collections.sort(noteList, new Comparator<Note>() {
             /**
              *
-             * @param lhs
-             * @param rhs
-             * @return an integer < 0 if lhs is less than rhs, 0 if they are
+             * param: lhs
+             * param: rhs
+             * return: an integer < 0 if lhs is less than rhs, 0 if they are
              *         equal, and > 0 if lhs is greater than rhs,比较数据大小时,这里比的是时间
              */
             @Override
@@ -266,23 +321,23 @@ public class MainActivity extends AppCompatActivity {
 
     //method for create shortcut on android
     //need launcher permission
-    private void createShortcut() {
-
-        Intent intent = new Intent();
-        intent.setAction("com.android.launcher.action.INSTALL_SHORTCUT");
-        //only one shortcut allowed
-        intent.putExtra("duplicate", false);
-
-        intent.putExtra(Intent.EXTRA_SHORTCUT_NAME, "MyNote");
-        intent.putExtra(Intent.EXTRA_SHORTCUT_ICON, BitmapFactory.decodeResource(getResources(), R.mipmap.launcher));
-
-        Intent intentShortcut = new Intent();
-        intentShortcut.setAction("uk.co.fei.shortcut");
-        intent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, intentShortcut);
-
-        sendBroadcast(intent);
-
-    }
+//    private void createShortcut() {
+//
+//        Intent intent = new Intent();
+//        intent.setAction("com.android.launcher.action.INSTALL_SHORTCUT");
+//        //only one shortcut allowed
+//        intent.putExtra("duplicate", false);
+//
+//        intent.putExtra(Intent.EXTRA_SHORTCUT_NAME, "MyNote");
+//        intent.putExtra(Intent.EXTRA_SHORTCUT_ICON, BitmapFactory.decodeResource(getResources(), R.mipmap.launcher));
+//
+//        Intent intentShortcut = new Intent();
+//        intentShortcut.setAction("uk.co.fei.shortcut");
+//        intent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, intentShortcut);
+//
+//        sendBroadcast(intent);
+//
+//    }
 
     @Override
     protected void onRestart() {
@@ -290,18 +345,32 @@ public class MainActivity extends AppCompatActivity {
         new Thread() {
             @Override
             public void run() {
-                mNoteList = mDbHelper.queryAll();
+
+                if (selectedCategory != null) {
+                    if (selectedCategory.equalsIgnoreCase("all notes")) {
+                        mNoteList = mDbHelper.queryAll();
+                    } else {
+                        mNoteList = mDbHelper.queryNoteByCategory(selectedCategory);
+                    }
+                } else {
+                    mNoteList = mDbHelper.queryAll();
+                }
+
                 sortList(mNoteList);
+                mCategoryList = mDbHelper.queryAllCategory();
+
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         mAdapter.notifyDataSetChanged();
+                        mCategoryAdapter.notifyDataSetChanged();
+//                        lvLeftMenu.setItemChecked(0,true);
                     }
                 });
             }
         }.start();
 
-        mSearchView.setQuery("",true);
+        mSearchView.setQuery("", true);
     }
 
     @Override
@@ -376,6 +445,7 @@ public class MainActivity extends AppCompatActivity {
         this.clickedNote = clickedNote;
     }
 
+
     public class MyListAdapter extends BaseAdapter {
 
         @Override
@@ -413,7 +483,7 @@ public class MainActivity extends AppCompatActivity {
 
             //reformat date to "dd/mm/yyyy"
             Date date = DateUtils.stringToDate(time);
-            SimpleDateFormat fomatter = new SimpleDateFormat("dd/MM/yyyy");
+            SimpleDateFormat fomatter = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
             String newTime = fomatter.format(date);
 
             String content = note.getContent();
@@ -445,5 +515,37 @@ public class MainActivity extends AppCompatActivity {
         TextView tvNoteTitle;
         TextView tvNoteContent;
         ImageView ivPhoto;
+    }
+
+
+    public class MyCategoryAdapter extends BaseAdapter {
+
+        @Override
+        public int getCount() {
+            return mCategoryList.size();
+        }
+
+        @Override
+        public String getItem(int position) {
+            return mCategoryList.get(position);
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return position;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+
+            if (convertView == null) {
+                convertView = View.inflate(MainActivity.this, R.layout.item_list_left_menu, null);
+            }
+
+            TextView tvLeftMenu = (TextView) convertView.findViewById(R.id.tvLeftMenu);
+            tvLeftMenu.setText(mCategoryList.get(position));
+
+            return convertView;
+        }
     }
 }

@@ -32,6 +32,8 @@
                 android:id="@+id/lvLeftMenu"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:choiceMode="singleChoice"
+                android:listSelector="@android:color/transparent"
                 android:divider="@null"/>
 
         </LinearLayout>

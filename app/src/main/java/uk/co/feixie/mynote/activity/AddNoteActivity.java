@@ -1,5 +1,6 @@
 package uk.co.feixie.mynote.activity;
 
+import android.annotation.SuppressLint;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -25,8 +26,11 @@ import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ListAdapter;
 import android.widget.VideoView;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -42,6 +46,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import uk.co.feixie.mynote.R;
 import uk.co.feixie.mynote.db.DbHelper;
@@ -65,6 +70,7 @@ public class AddNoteActivity extends AppCompatActivity implements
     private String mCurrentVideoPath;
     private ImageView ivAddPhoto;
     private VideoView vvAddVideo;
+    private AutoCompleteTextView acCategory;
 
     //Google address
     private GoogleApiClient mGoogleApiClient;
@@ -73,11 +79,13 @@ public class AddNoteActivity extends AppCompatActivity implements
     private AddressResultReceiver mResultReceiver;
     private String mAddressOutput;
     private int mAvailable;
+    private DbHelper mDbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_note);
+        mDbHelper = new DbHelper(this);
         initViews();
         buildGoogleApiClient();
     }
@@ -134,9 +142,12 @@ public class AddNoteActivity extends AppCompatActivity implements
         mToolbarAddNote = (Toolbar) findViewById(R.id.toolbarAddNote);
         setSupportActionBar(mToolbarAddNote);
         ActionBar supportActionBar = getSupportActionBar();
-        supportActionBar.setHomeAsUpIndicator(R.drawable.ic_done_black_24dp);
-        supportActionBar.setDisplayHomeAsUpEnabled(true);
-        supportActionBar.setTitle("");
+        if (supportActionBar!=null) {
+            supportActionBar.setHomeAsUpIndicator(R.drawable.ic_done_black_24dp);
+            supportActionBar.setDisplayHomeAsUpEnabled(true);
+            supportActionBar.setTitle("");
+        }
+
 
         etTitle = (EditText) findViewById(R.id.etTitle);
         ivAddPhoto = (ImageView) findViewById(R.id.ivAddPhoto);
@@ -145,6 +156,22 @@ public class AddNoteActivity extends AppCompatActivity implements
         etContent = (EditText) findViewById(R.id.etContent);
         etContent.requestFocus();
         etContent.requestFocusFromTouch();
+
+        acCategory = (AutoCompleteTextView) findViewById(R.id.acCategory);
+        new Thread(){
+            @Override
+            public void run() {
+                final List<String> listCategory = mDbHelper.queryAllCategory();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        ArrayAdapter<String> adapter = new ArrayAdapter<String>(AddNoteActivity.this, android.R.layout.simple_dropdown_item_1line,listCategory);
+                        acCategory.setAdapter(adapter);
+                    }
+                });
+            }
+        }.start();
+
     }
 
     @Override
@@ -194,7 +221,7 @@ public class AddNoteActivity extends AppCompatActivity implements
     //save note to database
     private void saveNote() {
         final Note note = new Note();
-        final DbHelper dbHelper = new DbHelper(this);
+
 //        List<Note> noteList = dbHelper.queryAll();
 //        note.setId(noteList.size()+jan);
         String title = etTitle.getText().toString();
@@ -213,10 +240,13 @@ public class AddNoteActivity extends AppCompatActivity implements
             note.setTitle(title);
         }
 
+        String category = acCategory.getText().toString();
+        note.setCategory(category);
+
         String content = etContent.getText().toString();
         note.setContent(content);
 
-        SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+        SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault());
         String time = formatter.format(new Date());
         note.setTime(time);
 
@@ -238,7 +268,8 @@ public class AddNoteActivity extends AppCompatActivity implements
         new Thread() {
             @Override
             public void run() {
-                dbHelper.add(note);
+                mDbHelper.add(note);
+                mDbHelper.addCategory(note.getCategory());
             }
         }.start();
     }
@@ -294,7 +325,7 @@ public class AddNoteActivity extends AppCompatActivity implements
 
     private File createImageFile() throws IOException {
         // Create an image file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss",Locale.getDefault()).format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
         File storageDir = Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_PICTURES);
@@ -465,6 +496,7 @@ public class AddNoteActivity extends AppCompatActivity implements
     }
 
 
+    @SuppressLint("ParcelCreator")
     public class AddressResultReceiver extends ResultReceiver {
 
 

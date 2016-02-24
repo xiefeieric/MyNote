@@ -56,6 +56,26 @@
                 android:layout_margin="10dp"
                 android:background="#66000000"/>
 
+            <AutoCompleteTextView
+                android:id="@+id/acCategory"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:layout_marginTop="10dp"
+                android:background="@null"
+                android:hint="Category"
+                android:completionThreshold="1"
+                android:singleLine="true"
+                android:textColor="#00cc00"
+                />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="2dp"
+                android:layout_margin="10dp"
+                android:background="#66000000"/>
+
 
             <LinearLayout
                 android:layout_width="match_parent"

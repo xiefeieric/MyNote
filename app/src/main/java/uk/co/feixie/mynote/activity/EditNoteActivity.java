@@ -4,7 +4,6 @@ import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -17,6 +16,8 @@ import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.VideoView;
@@ -25,18 +26,16 @@ import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.lidroid.xutils.BitmapUtils;
 
-import org.w3c.dom.Text;
-
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import uk.co.feixie.mynote.R;
 import uk.co.feixie.mynote.db.DbHelper;
 import uk.co.feixie.mynote.model.Note;
-import uk.co.feixie.mynote.utils.BitmapUtil;
 import uk.co.feixie.mynote.utils.UIUtils;
 
 public class EditNoteActivity extends AppCompatActivity {
@@ -45,6 +44,7 @@ public class EditNoteActivity extends AppCompatActivity {
     private EditText etEditTitle, etEditContent;
     private ImageView ivEditPhoto;
     private VideoView vvEditVideo;
+    private AutoCompleteTextView acEditCategory;
 
     private static final int SPEECH_REQUEST_CODE = 0;
     private static final int REQUEST_IMAGE_CAPTURE = 1;
@@ -52,6 +52,7 @@ public class EditNoteActivity extends AppCompatActivity {
 
     private String mCurrentPhotoPath;
     private String mCurrentVideoPath;
+    private DbHelper mDbHelper;
 
 
     @Override
@@ -59,14 +60,16 @@ public class EditNoteActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_note);
         mNote = (Note) getIntent().getSerializableExtra("note");
+        mDbHelper = new DbHelper(this);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         ActionBar supportActionBar = getSupportActionBar();
-        supportActionBar.setDisplayHomeAsUpEnabled(true);
-        supportActionBar.setHomeAsUpIndicator(R.drawable.ic_done_black_24dp);
-        supportActionBar.setTitle("");
-
+        if (supportActionBar != null) {
+            supportActionBar.setDisplayHomeAsUpEnabled(true);
+            supportActionBar.setHomeAsUpIndicator(R.drawable.ic_done_black_24dp);
+            supportActionBar.setTitle("");
+        }
         initViews();
     }
 
@@ -99,6 +102,22 @@ public class EditNoteActivity extends AppCompatActivity {
             vvEditVideo.setVisibility(View.VISIBLE);
             vvEditVideo.start();
         }
+
+        acEditCategory = (AutoCompleteTextView) findViewById(R.id.acEditCategory);
+        acEditCategory.setText(mNote.getCategory());
+        new Thread(){
+            @Override
+            public void run() {
+                final List<String> listCategory = mDbHelper.queryAllCategory();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        ArrayAdapter<String> adapter = new ArrayAdapter<>(EditNoteActivity.this, android.R.layout.simple_dropdown_item_1line,listCategory);
+                        acEditCategory.setAdapter(adapter);
+                    }
+                });
+            }
+        }.start();
     }
 
     @Override
@@ -119,11 +138,14 @@ public class EditNoteActivity extends AppCompatActivity {
 
                 newTitle = etEditTitle.getText().toString();
                 newContent = etEditContent.getText().toString();
+                String newCategory = acEditCategory.getText().toString();
 
                 if (!TextUtils.equals(newTitle, mNote.getTitle()) || !TextUtils.equals(newContent, mNote.getContent())
-                        || !TextUtils.isEmpty(mCurrentPhotoPath) || !TextUtils.isEmpty(mCurrentVideoPath)) {
+                        || !TextUtils.isEmpty(mCurrentPhotoPath) || !TextUtils.isEmpty(mCurrentVideoPath) || !TextUtils.equals(newCategory, mNote.getCategory())) {
+
                     mNote.setTitle(newTitle);
                     mNote.setContent(newContent);
+                    mNote.setCategory(newCategory);
 
                     if (!TextUtils.isEmpty(mCurrentPhotoPath) && !TextUtils.equals(mCurrentPhotoPath, mNote.getImagePath())) {
                         mNote.setImagePath(mCurrentPhotoPath);
@@ -199,7 +221,7 @@ public class EditNoteActivity extends AppCompatActivity {
             bitmapUtils.display(ivEditPhoto, mCurrentPhotoPath);
             ivEditPhoto.setVisibility(View.VISIBLE);
         } else {
-            mCurrentPhotoPath=null;
+            mCurrentPhotoPath = null;
         }
 
         if (requestCode == REQUEST_VIDEO_CAPTURE && resultCode == RESULT_OK) {
@@ -259,9 +281,7 @@ public class EditNoteActivity extends AppCompatActivity {
 
     private boolean saveEdit(Note note) {
 
-        DbHelper dbHelper = new DbHelper(this);
-        boolean isUpdate = dbHelper.update(note);
-        return isUpdate;
+        return mDbHelper.update(note);
     }
 
     private void displaySpeechRecognizer() {
@@ -302,7 +322,7 @@ public class EditNoteActivity extends AppCompatActivity {
 
     private File createImageFile() throws IOException {
         // Create an image file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
         File storageDir = Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_PICTURES);

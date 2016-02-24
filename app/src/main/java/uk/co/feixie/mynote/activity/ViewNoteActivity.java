@@ -41,6 +41,7 @@ public class ViewNoteActivity extends AppCompatActivity {
     private Note mNote;
     private ImageView ivShowPhoto;
     private VideoView vvViewVideo;
+    private TextView tvViewCategory;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,10 +53,11 @@ public class ViewNoteActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         ActionBar supportActionBar = getSupportActionBar();
-        supportActionBar.setHomeAsUpIndicator(R.drawable.ic_keyboard_backspace_black_24dp);
-        supportActionBar.setDisplayHomeAsUpEnabled(true);
-        supportActionBar.setTitle("");
-
+        if (supportActionBar != null) {
+            supportActionBar.setHomeAsUpIndicator(R.drawable.ic_keyboard_backspace_black_24dp);
+            supportActionBar.setDisplayHomeAsUpEnabled(true);
+            supportActionBar.setTitle("");
+        }
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -83,6 +85,7 @@ public class ViewNoteActivity extends AppCompatActivity {
             mNote = (Note) data.getSerializableExtra("request_note");
             tvTitle.setText(mNote.getTitle());
             tvContent.setText(mNote.getContent());
+            tvViewCategory.setText(mNote.getCategory());
             String imagePath = mNote.getImagePath();
 //            System.out.println("imagePath: " + imagePath);
             if (!TextUtils.isEmpty(imagePath)) {
@@ -105,6 +108,9 @@ public class ViewNoteActivity extends AppCompatActivity {
 
         tvTitle = (TextView) findViewById(R.id.tvTitle);
         tvTitle.setText(mNote.getTitle());
+
+        tvViewCategory = (TextView) findViewById(R.id.tvViewCategory);
+        tvViewCategory.setText(mNote.getCategory());
 
         tvContent = (TextView) findViewById(R.id.tvContent);
         tvContent.setText(mNote.getContent());

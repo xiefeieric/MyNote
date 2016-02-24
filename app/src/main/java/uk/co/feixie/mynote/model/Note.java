@@ -16,24 +16,11 @@ public class Note implements Serializable {
     private String time;
     private String latitude;
     private String longitude;
-
+    private String category;
 
 
     public Note() {
     }
-
-    public Note(int id, String title, String content, String imagePath, String videoPath, String voicePath, String time, String latitude, String longitude) {
-        this.id = id;
-        this.title = title;
-        this.content = content;
-        this.imagePath = imagePath;
-        this.videoPath = videoPath;
-        this.voicePath = voicePath;
-        this.time = time;
-        this.latitude = latitude;
-        this.longitude = longitude;
-    }
-
 
     public int getId() {
         return id;
@@ -107,10 +94,17 @@ public class Note implements Serializable {
         this.longitude = longitude;
     }
 
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
     @Override
     public String toString() {
         return "Note{" +
-
                 "id=" + id +
                 ", title='" + title + '\'' +
                 ", content='" + content + '\'' +
@@ -118,8 +112,9 @@ public class Note implements Serializable {
                 ", videoPath='" + videoPath + '\'' +
                 ", voicePath='" + voicePath + '\'' +
                 ", time='" + time + '\'' +
-                ", latitude=" + latitude +
-                ", longitude=" + longitude +
+                ", latitude='" + latitude + '\'' +
+                ", longitude='" + longitude + '\'' +
+                ", category='" + category + '\'' +
                 '}';
     }
 }
