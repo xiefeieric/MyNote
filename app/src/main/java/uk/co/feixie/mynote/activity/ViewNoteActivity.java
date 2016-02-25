@@ -3,8 +3,6 @@ package uk.co.feixie.mynote.activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -12,10 +10,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.text.SpannableStringBuilder;
-import android.text.Spanned;
 import android.text.TextUtils;
-import android.text.style.ForegroundColorSpan;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -31,8 +26,6 @@ import cn.sharesdk.onekeyshare.OnekeyShare;
 import uk.co.feixie.mynote.R;
 import uk.co.feixie.mynote.db.DbHelper;
 import uk.co.feixie.mynote.model.Note;
-import uk.co.feixie.mynote.utils.BitmapUtil;
-import uk.co.feixie.mynote.utils.UIUtils;
 
 public class ViewNoteActivity extends AppCompatActivity {
 
@@ -63,8 +56,6 @@ public class ViewNoteActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
                 Intent intent = new Intent(ViewNoteActivity.this, EditNoteActivity.class);
                 intent.putExtra("note", mNote);
                 startActivityForResult(intent, VIEW_REQUEST_CODE);
@@ -147,6 +138,16 @@ public class ViewNoteActivity extends AppCompatActivity {
                         break;
                 }
                 return true;
+            }
+        });
+
+        ivShowPhoto.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent();
+                intent.setAction(Intent.ACTION_VIEW);
+                intent.setDataAndType(Uri.parse(mNote.getImagePath()), "image/*");
+                startActivity(intent);
             }
         });
     }

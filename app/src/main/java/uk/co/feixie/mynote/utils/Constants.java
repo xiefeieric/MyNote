@@ -15,4 +15,6 @@ public class Constants {
     public static final String LOCATION_DATA_EXTRA = PACKAGE_NAME +
             ".LOCATION_DATA_EXTRA";
 
+    public static final String APPS_URL = "http://www.feixie.me.uk/apps.json";
+
 }

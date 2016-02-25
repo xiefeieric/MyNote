@@ -4,14 +4,22 @@
       tools:context=".MainActivity">
 
     <item android:id="@+id/search"
-          android:title="Search"
+          android:title="@string/search"
           android:icon="@drawable/ic_search_white_24dp"
           app:showAsAction="collapseActionView|ifRoom"
           app:actionViewClass="android.support.v7.widget.SearchView" />
 
     <item
-        android:id="@+id/action_settings"
-        android:orderInCategory="200"
-        android:title="@string/action_settings"
-        app:showAsAction="never"/>
+        android:id="@+id/action_apps"
+        android:icon="@drawable/ic_get_app_white_24dp"
+        android:title="@string/my_apps"
+        app:showAsAction="ifRoom">
+    </item>
+
+    <!--<item-->
+        <!--android:id="@+id/action_settings"-->
+        <!--android:orderInCategory="200"-->
+        <!--android:title="@string/action_settings"-->
+        <!--app:showAsAction="never"/>-->
+
 </menu>
