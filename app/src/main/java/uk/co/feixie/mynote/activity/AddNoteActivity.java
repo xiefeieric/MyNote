@@ -3,8 +3,6 @@ package uk.co.feixie.mynote.activity;
 import android.annotation.SuppressLint;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.location.Geocoder;
 import android.location.Location;
 import android.net.Uri;
@@ -17,12 +15,7 @@ import android.support.v4.os.ResultReceiver;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.text.Editable;
-import android.text.Spannable;
-import android.text.SpannableString;
 import android.text.TextUtils;
-import android.text.style.ImageSpan;
-import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -30,7 +23,6 @@ import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.ListAdapter;
 import android.widget.VideoView;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -41,7 +33,6 @@ import com.google.zxing.integration.android.IntentResult;
 import com.lidroid.xutils.BitmapUtils;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -61,7 +52,6 @@ import static com.google.android.gms.common.GooglePlayServicesUtil.isGooglePlayS
 public class AddNoteActivity extends AppCompatActivity implements
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
-    private Toolbar mToolbarAddNote;
     private EditText etTitle, etContent;
     private static final int SPEECH_REQUEST_CODE = 0;
     private static final int REQUEST_IMAGE_CAPTURE = 1;
@@ -76,10 +66,10 @@ public class AddNoteActivity extends AppCompatActivity implements
     private GoogleApiClient mGoogleApiClient;
     protected Location mLastLocation;
     private boolean mAddressRequested;
-    private AddressResultReceiver mResultReceiver;
     private String mAddressOutput;
     private int mAvailable;
     private DbHelper mDbHelper;
+    private ArrayAdapter<String> mAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,8 +82,8 @@ public class AddNoteActivity extends AppCompatActivity implements
 
     protected void startIntentService() {
         Intent intent = new Intent(this, FetchAddressIntentService.class);
-        mResultReceiver = new AddressResultReceiver(null);
-        intent.putExtra(Constants.RECEIVER, mResultReceiver);
+        AddressResultReceiver resultReceiver = new AddressResultReceiver(null);
+        intent.putExtra(Constants.RECEIVER, resultReceiver);
         intent.putExtra(Constants.LOCATION_DATA_EXTRA, mLastLocation);
         startService(intent);
     }
@@ -139,10 +129,10 @@ public class AddNoteActivity extends AppCompatActivity implements
     }
 
     private void initViews() {
-        mToolbarAddNote = (Toolbar) findViewById(R.id.toolbarAddNote);
-        setSupportActionBar(mToolbarAddNote);
+        Toolbar toolbarAddNote = (Toolbar) findViewById(R.id.toolbarAddNote);
+        setSupportActionBar(toolbarAddNote);
         ActionBar supportActionBar = getSupportActionBar();
-        if (supportActionBar!=null) {
+        if (supportActionBar != null) {
             supportActionBar.setHomeAsUpIndicator(R.drawable.ic_done_black_24dp);
             supportActionBar.setDisplayHomeAsUpEnabled(true);
             supportActionBar.setTitle("");
@@ -158,15 +148,15 @@ public class AddNoteActivity extends AppCompatActivity implements
         etContent.requestFocusFromTouch();
 
         acCategory = (AutoCompleteTextView) findViewById(R.id.acCategory);
-        new Thread(){
+        new Thread() {
             @Override
             public void run() {
                 final List<String> listCategory = mDbHelper.queryAllCategory();
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        ArrayAdapter<String> adapter = new ArrayAdapter<String>(AddNoteActivity.this, android.R.layout.simple_dropdown_item_1line,listCategory);
-                        acCategory.setAdapter(adapter);
+                        mAdapter = new ArrayAdapter<>(AddNoteActivity.this, android.R.layout.simple_dropdown_item_1line, listCategory);
+                        acCategory.setAdapter(mAdapter);
                     }
                 });
             }
@@ -269,9 +259,33 @@ public class AddNoteActivity extends AppCompatActivity implements
             @Override
             public void run() {
                 mDbHelper.add(note);
-                mDbHelper.addCategory(note.getCategory());
+
+                String noteCategory = note.getCategory();
+                boolean isInCategory = checkNameInCategory(noteCategory);
+                if (!isInCategory) {
+                    mDbHelper.addCategory(note.getCategory());
+                }
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (mAdapter != null) {
+                            mAdapter.notifyDataSetChanged();
+                        }
+                    }
+                });
             }
         }.start();
+    }
+
+    private boolean checkNameInCategory(String name) {
+        List<String> list = mDbHelper.queryAllCategory();
+        for (String category : list) {
+            if (category.equalsIgnoreCase(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void scanQR() {
@@ -325,7 +339,7 @@ public class AddNoteActivity extends AppCompatActivity implements
 
     private File createImageFile() throws IOException {
         // Create an image file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss",Locale.getDefault()).format(new Date());
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
         File storageDir = Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_PICTURES);
@@ -341,37 +355,36 @@ public class AddNoteActivity extends AppCompatActivity implements
 
     /**
      * 通过路径获取系统图片
-     *
-     * @param uri
-     * @return
+     * <p/>
+     * uri
      */
-    private Bitmap getBitmap(Uri uri) {
-        Bitmap pic = null;
-        BitmapFactory.Options op = new BitmapFactory.Options();
-        op.inJustDecodeBounds = true;
-        Display display = getWindowManager().getDefaultDisplay();
-        int dw = display.getWidth();
-        int dh = display.getHeight();
-        try {
-            pic = BitmapFactory.decodeStream(getContentResolver()
-                    .openInputStream(uri), null, op);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        int wRatio = (int) Math.ceil(op.outWidth / (float) dw);
-        int hRatio = (int) Math.ceil(op.outHeight / (float) dh);
-        if (wRatio > 1 && hRatio > 1) {
-            op.inSampleSize = wRatio + hRatio;
-        }
-        op.inJustDecodeBounds = false;
-        try {
-            pic = BitmapFactory.decodeStream(getContentResolver()
-                    .openInputStream(uri), null, op);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        return pic;
-    }
+//    private Bitmap getBitmap(Uri uri) {
+//        Bitmap pic = null;
+//        BitmapFactory.Options op = new BitmapFactory.Options();
+//        op.inJustDecodeBounds = true;
+//        Display display = getWindowManager().getDefaultDisplay();
+//        int dw = display.getWidth();
+//        int dh = display.getHeight();
+//        try {
+//            pic = BitmapFactory.decodeStream(getContentResolver()
+//                    .openInputStream(uri), null, op);
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        }
+//        int wRatio = (int) Math.ceil(op.outWidth / (float) dw);
+//        int hRatio = (int) Math.ceil(op.outHeight / (float) dh);
+//        if (wRatio > 1 && hRatio > 1) {
+//            op.inSampleSize = wRatio + hRatio;
+//        }
+//        op.inJustDecodeBounds = false;
+//        try {
+//            pic = BitmapFactory.decodeStream(getContentResolver()
+//                    .openInputStream(uri), null, op);
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        }
+//        return pic;
+//    }
 
     // This callback is invoked when the Speech Recognizer returns.
     // This is where you process the intent and extract the speech text from the intent.
@@ -393,7 +406,7 @@ public class AddNoteActivity extends AppCompatActivity implements
 //            Bitmap imageBitmap = getBitmap(uri);
 //            mImageView.setImageBitmap(imageBitmap);
             //insertIntoEditText(getBitmapMime(imageBitmap,uri));
-            System.out.println("mCurrentPath: "+mCurrentPhotoPath);
+            System.out.println("mCurrentPath: " + mCurrentPhotoPath);
             BitmapUtils bitmapUtils = new BitmapUtils(this);
             bitmapUtils.display(ivAddPhoto, mCurrentPhotoPath);
 //            ivAddPhoto.setImageBitmap(imageBitmap);
@@ -422,34 +435,33 @@ public class AddNoteActivity extends AppCompatActivity implements
     }
 
     //add image into edittext
-    private SpannableString getBitmapMime(Bitmap pic, Uri uri) {
-//        int imgWidth = pic.getWidth();
-//        int imgHeight = pic.getHeight();
-//        float scalew = (float) 40 / imgWidth;
-//        float scaleh = (float) 40 / imgHeight;
-//        Matrix mx = new Matrix();
-//        mx.setScale(scalew, scaleh);
-//        pic = Bitmap.createBitmap(pic, 0, 0, imgWidth, imgHeight, mx, true);
-//        String smile = uri.getPath();
-        String smile = "-";
-        SpannableString ss = new SpannableString(smile + "\n");
-        ImageSpan span = new ImageSpan(this, pic);
-        ss.setSpan(span, 0, smile.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-//        ss.setSpan(span, 0, 3, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        return ss;
-    }
+//    private SpannableString getBitmapMime(Bitmap pic, Uri uri) {
+////        int imgWidth = pic.getWidth();
+////        int imgHeight = pic.getHeight();
+////        float scalew = (float) 40 / imgWidth;
+////        float scaleh = (float) 40 / imgHeight;
+////        Matrix mx = new Matrix();
+////        mx.setScale(scalew, scaleh);
+////        pic = Bitmap.createBitmap(pic, 0, 0, imgWidth, imgHeight, mx, true);
+////        String smile = uri.getPath();
+//        String smile = "-";
+//        SpannableString ss = new SpannableString(smile + "\n");
+//        ImageSpan span = new ImageSpan(this, pic);
+//        ss.setSpan(span, 0, smile.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+////        ss.setSpan(span, 0, 3, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+//        return ss;
+//    }
 
     /**
      * 这里是重点
      */
-    private void insertIntoEditText(SpannableString ss) {
-        Editable et = etContent.getText();// 先获取Edittext中的内容
-        int start = etContent.getSelectionStart();
-        et.insert(start, ss);// 设置ss要添加的位置
-        etContent.setText(et);// 把et添加到Edittext中
-        etContent.setSelection(start + ss.length());// 设置Edittext中光标在最后面显示
-    }
-
+//    private void insertIntoEditText(SpannableString ss) {
+//        Editable et = etContent.getText();// 先获取Edittext中的内容
+//        int start = etContent.getSelectionStart();
+//        et.insert(start, ss);// 设置ss要添加的位置
+//        etContent.setText(et);// 把et添加到Edittext中
+//        etContent.setSelection(start + ss.length());// 设置Edittext中光标在最后面显示
+//    }
     @Override
     public void onBackPressed() {
         super.onBackPressed();

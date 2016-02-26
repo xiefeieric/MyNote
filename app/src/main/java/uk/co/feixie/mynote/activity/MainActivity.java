@@ -239,7 +239,12 @@ public class MainActivity extends AppCompatActivity {
                             public void onClick(DialogInterface dialog, int which) {
                                 mCategoryList.remove(category);
                                 mCategoryAdapter.notifyDataSetChanged();
-                                mDbHelper.deleteCategory(category);
+                                new Thread(){
+                                    @Override
+                                    public void run() {
+                                        mDbHelper.deleteCategory(category);
+                                    }
+                                }.start();
                             }
                         });
                         builder.show();
