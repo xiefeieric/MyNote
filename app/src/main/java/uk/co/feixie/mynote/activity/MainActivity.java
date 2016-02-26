@@ -54,7 +54,6 @@ public class MainActivity extends AppCompatActivity {
     private MyListAdapter mAdapter;
     private DbHelper mDbHelper;
     private ImageView ivToolbar;
-    private BitmapUtils mBitmapUtils;
     private Note clickedNote;
     private SearchView mSearchView;
     private List<String> mCategoryList;
@@ -114,16 +113,21 @@ public class MainActivity extends AppCompatActivity {
                 mNoteList = mDbHelper.queryAll();
                 sortList(mNoteList);
                 mCategoryList = mDbHelper.queryAllCategory();
+                Collections.sort(mCategoryList, String.CASE_INSENSITIVE_ORDER);
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         mAdapter = new MyListAdapter();
                         lvMainContent.setAdapter(mAdapter);
 
-//                        mCategoryAdapter = new ArrayAdapter(MainActivity.this, R.layout.item_list_left_menu, R.id.tvLeftMenu, mCategoryList);
                         mCategoryAdapter = new MyCategoryAdapter();
                         lvLeftMenu.setAdapter(mCategoryAdapter);
-                        lvLeftMenu.setItemChecked(0, true);
+                        for (int i = 0; i < mCategoryList.size(); i++) {
+                            if (mCategoryList.get(i).equalsIgnoreCase("all notes")){
+                                lvLeftMenu.setItemChecked(i, true);
+                                return;
+                            }
+                        }
                     }
                 });
             }
@@ -360,10 +364,10 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     mNoteList = mDbHelper.queryAll();
                 }
-
                 sortList(mNoteList);
-                mCategoryList = mDbHelper.queryAllCategory();
 
+                mCategoryList = mDbHelper.queryAllCategory();
+                Collections.sort(mCategoryList,String.CASE_INSENSITIVE_ORDER);
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -509,8 +513,8 @@ public class MainActivity extends AppCompatActivity {
             if (!TextUtils.isEmpty(imagePath)) {
 //                Bitmap bitmap = BitmapUtil.getBitmapLocal(MainActivity.this, Uri.parse(imagePath));
 //                Bitmap bitmap = null;
-                mBitmapUtils = new BitmapUtils(MainActivity.this);
-                mBitmapUtils.display(holder.ivPhoto, imagePath);
+                BitmapUtils bitmapUtils = new BitmapUtils(MainActivity.this);
+                bitmapUtils.display(holder.ivPhoto, imagePath);
 //                    bitmap = BitmapFactory.decodeStream(getContentResolver()
 //                            .openInputStream(Uri.parse(imagePath)));
 //                holder.ivPhoto.setImageBitmap(bitmap);
