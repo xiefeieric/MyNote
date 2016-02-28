@@ -59,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private List<String> mCategoryList;
     private MyCategoryAdapter mCategoryAdapter;
     private String selectedCategory;
+    private int sortType;
 
 
     @Override
@@ -216,7 +217,7 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     mNoteList = mDbHelper.queryNoteByCategory(category);
                 }
-                sortList(mNoteList);
+                sortOrder();
                 mAdapter.notifyDataSetChanged();
                 dlMenu.closeDrawers();
             }
@@ -306,6 +307,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //sort most recent order
     public void sortList(List<Note> noteList) {
         Collections.sort(noteList, new Comparator<Note>() {
             /**
@@ -322,6 +324,38 @@ public class MainActivity extends AppCompatActivity {
                 // 对日期字段进行升序，如果欲降序可采用after方法
                 if (date1.getTime() < date2.getTime()) return 1;
                 else if (date1.getTime() > date2.getTime()) return -1;
+                else return 0;
+            }
+
+        });
+    }
+
+    //sort ascending order
+    public void sortListAscending(List<Note> noteList) {
+        Collections.sort(noteList, new Comparator<Note>() {
+            @Override
+            public int compare(Note current, Note after) {
+                String currentTitle = current.getTitle();
+                String afterTitle = after.getTitle();
+                int compare = currentTitle.compareToIgnoreCase(afterTitle);
+                if (compare>0) return 1;
+                else if (compare<0) return -1;
+                else return 0;
+            }
+
+        });
+    }
+
+    //sort descending order
+    public void sortListDescending(List<Note> noteList) {
+        Collections.sort(noteList, new Comparator<Note>() {
+            @Override
+            public int compare(Note current, Note after) {
+                String currentTitle = current.getTitle();
+                String afterTitle = after.getTitle();
+                int compare = currentTitle.compareToIgnoreCase(afterTitle);
+                if (compare<0) return 1;
+                else if (compare>0) return -1;
                 else return 0;
             }
 
@@ -364,7 +398,8 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     mNoteList = mDbHelper.queryAll();
                 }
-                sortList(mNoteList);
+
+                sortOrder();
 
                 mCategoryList = mDbHelper.queryAllCategory();
                 Collections.sort(mCategoryList,String.CASE_INSENSITIVE_ORDER);
@@ -373,13 +408,22 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         mAdapter.notifyDataSetChanged();
                         mCategoryAdapter.notifyDataSetChanged();
-//                        lvLeftMenu.setItemChecked(0,true);
                     }
                 });
             }
         }.start();
 
         mSearchView.setQuery("", true);
+    }
+
+    private void sortOrder() {
+        if (sortType==0) {
+            sortList(mNoteList);
+        } else if (sortType==1) {
+            sortListAscending(mNoteList);
+        } else if (sortType==2) {
+            sortListDescending(mNoteList);
+        }
     }
 
     @Override
@@ -444,6 +488,26 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
+        if (id == R.id.action_sort) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setItems(new String[]{"Most Recent", "Ascending", "Descending"}, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    sortType = which;
+                    if (which==0) {
+                        sortList(mNoteList);
+                    } else if (which==1) {
+                        sortListAscending(mNoteList);
+                    } else if (which==2) {
+                        sortListDescending(mNoteList);
+                    }
+                    mAdapter.notifyDataSetChanged();
+                }
+            });
+            builder.setNegativeButton("CANCEL", null);
+            builder.show();
+            return true;
+        }
 
 //        if (id == android.R.id.home) {
 //            UIUtils.showToast(this, "slide menu");
