@@ -108,6 +108,7 @@ public class MainActivity extends AppCompatActivity {
         dlMenu = (DrawerLayout) findViewById(R.id.dlMenu);
 
         mDbHelper = new DbHelper(this);
+        mAdapter = new MyListAdapter();
         new Thread() {
             @Override
             public void run() {
@@ -118,9 +119,7 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        mAdapter = new MyListAdapter();
                         lvMainContent.setAdapter(mAdapter);
-
                         mCategoryAdapter = new MyCategoryAdapter();
                         lvLeftMenu.setAdapter(mCategoryAdapter);
                         for (int i = 0; i < mCategoryList.size(); i++) {

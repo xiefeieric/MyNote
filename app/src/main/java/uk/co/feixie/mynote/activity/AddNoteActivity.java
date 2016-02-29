@@ -2,13 +2,19 @@ package uk.co.feixie.mynote.activity;
 
 import android.annotation.SuppressLint;
 import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.database.Cursor;
 import android.location.Geocoder;
 import android.location.Location;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.Parcelable;
 import android.provider.MediaStore;
 import android.speech.RecognizerIntent;
 import android.support.v4.os.ResultReceiver;
@@ -30,11 +36,13 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
-import com.lidroid.xutils.BitmapUtils;
+
+import org.xutils.x;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -44,6 +52,7 @@ import uk.co.feixie.mynote.db.DbHelper;
 import uk.co.feixie.mynote.model.Note;
 import uk.co.feixie.mynote.service.FetchAddressIntentService;
 import uk.co.feixie.mynote.utils.Constants;
+import uk.co.feixie.mynote.utils.ImageFilePath;
 import uk.co.feixie.mynote.utils.UIUtils;
 
 import static com.google.android.gms.common.GooglePlayServicesUtil.getErrorDialog;
@@ -129,6 +138,10 @@ public class AddNoteActivity extends AppCompatActivity implements
     }
 
     private void initViews() {
+
+        x.Ext.init(getApplication());
+        x.Ext.setDebug(true);
+
         Toolbar toolbarAddNote = (Toolbar) findViewById(R.id.toolbarAddNote);
         setSupportActionBar(toolbarAddNote);
         ActionBar supportActionBar = getSupportActionBar();
@@ -194,7 +207,8 @@ public class AddNoteActivity extends AppCompatActivity implements
                 break;
             case R.id.action_bar_photo:
 //                UIUtils.showToast(this, "photo");
-                dispatchTakePictureIntent();
+//                dispatchTakePictureIntent();
+                takeSelectPicture();
                 break;
             case R.id.action_bar_video:
 //                UIUtils.showToast(this, "video");
@@ -211,9 +225,6 @@ public class AddNoteActivity extends AppCompatActivity implements
     //save note to database
     private void saveNote() {
         final Note note = new Note();
-
-//        List<Note> noteList = dbHelper.queryAll();
-//        note.setId(noteList.size()+jan);
         String title = etTitle.getText().toString();
         String capital;
         if (!TextUtils.isEmpty(title)) {
@@ -230,8 +241,10 @@ public class AddNoteActivity extends AppCompatActivity implements
             note.setTitle(title);
         }
 
+
         String category = acCategory.getText().toString();
         note.setCategory(category);
+
 
         String content = etContent.getText().toString();
         note.setContent(content);
@@ -262,7 +275,7 @@ public class AddNoteActivity extends AppCompatActivity implements
 
                 String noteCategory = note.getCategory();
                 boolean isInCategory = checkNameInCategory(noteCategory);
-                if (!isInCategory) {
+                if (!isInCategory && !TextUtils.isEmpty(noteCategory)) {
                     mDbHelper.addCategory(note.getCategory());
                 }
 
@@ -330,6 +343,47 @@ public class AddNoteActivity extends AppCompatActivity implements
         }
     }
 
+    private void takeSelectPicture() {
+
+        // Create the File where the photo should go
+        File photoFile = null;
+        try {
+            photoFile = createImageFile();
+        } catch (IOException ex) {
+            // Error occurred while creating the File
+            UIUtils.showToast(this, "Photo save error!");
+        }
+        // Continue only if the File was successfully created
+        if (photoFile != null) {
+            // Camera.
+            final List<Intent> cameraIntents = new ArrayList<Intent>();
+            final Intent captureIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+            final PackageManager packageManager = getPackageManager();
+            final List<ResolveInfo> listCam = packageManager.queryIntentActivities(captureIntent, 0);
+            for (ResolveInfo res : listCam) {
+                final String packageName = res.activityInfo.packageName;
+                final Intent intent = new Intent(captureIntent);
+                intent.setComponent(new ComponentName(res.activityInfo.packageName, res.activityInfo.name));
+                intent.setPackage(packageName);
+                intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
+                cameraIntents.add(intent);
+            }
+
+            // Filesystem.
+            final Intent galleryIntent = new Intent();
+            galleryIntent.setType("image/*");
+            galleryIntent.setAction(Intent.ACTION_PICK);
+
+            // Chooser of filesystem options.
+            final Intent chooserIntent = Intent.createChooser(galleryIntent, "Select Source");
+
+            // Add the camera options.
+            chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, cameraIntents.toArray(new Parcelable[cameraIntents.size()]));
+
+            startActivityForResult(chooserIntent, REQUEST_IMAGE_CAPTURE);
+        }
+    }
+
     private void dispatchTakeVideoIntent() {
         Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
         if (takeVideoIntent.resolveActivity(getPackageManager()) != null) {
@@ -352,6 +406,28 @@ public class AddNoteActivity extends AppCompatActivity implements
         mCurrentPhotoPath = "file:" + image.getAbsolutePath();
         return image;
     }
+
+    /**
+     * helper to retrieve the path of an image URI
+     */
+    public String getPath(Uri uri) {
+        if (uri == null) {
+            return null;
+        }
+        String[] projection = {MediaStore.Images.Media.DATA};
+        Cursor cursor = getContentResolver().query(uri, projection, null, null, null);
+        if (cursor != null) {
+            int column_index = cursor
+                    .getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+            cursor.moveToFirst();
+            String path = cursor.getString(column_index);
+            cursor.close();
+            return path;
+        }
+
+        return uri.getPath();
+    }
+
 
     /**
      * 通过路径获取系统图片
@@ -406,11 +482,37 @@ public class AddNoteActivity extends AppCompatActivity implements
 //            Bitmap imageBitmap = getBitmap(uri);
 //            mImageView.setImageBitmap(imageBitmap);
             //insertIntoEditText(getBitmapMime(imageBitmap,uri));
-            System.out.println("mCurrentPath: " + mCurrentPhotoPath);
-            BitmapUtils bitmapUtils = new BitmapUtils(this);
-            bitmapUtils.display(ivAddPhoto, mCurrentPhotoPath);
+            final boolean isCamera;
+            if (data == null || (data.getData() == null && data.getClipData() == null)) {
+                isCamera = true;
+            } else {
+                isCamera = MediaStore.ACTION_IMAGE_CAPTURE.equals(data.getAction());
+            }
+
+//            System.out.println(isCamera);
+            final Uri selectedImageUri;
+            if (isCamera) {
+                selectedImageUri = Uri.parse(mCurrentPhotoPath);
+//                System.out.println("mCurrentPath: " + selectedImageUri.getPath());
+                x.image().bind(ivAddPhoto, selectedImageUri.getPath());
+            } else {
+                selectedImageUri = data.getData();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    String path = ImageFilePath.getPath(this, selectedImageUri);
+                    mCurrentPhotoPath = path;
+//                    System.out.println("path: "+path);
+                    x.image().bind(ivAddPhoto, path);
+                } else {
+                    String path = getPath(selectedImageUri);
+                    mCurrentPhotoPath = path;
+                    x.image().bind(ivAddPhoto, path);
+                }
+            }
+//            BitmapUtils bitmapUtils = new BitmapUtils(this);
+//            bitmapUtils.display(ivAddPhoto, URLDecoder.decode(selectedImageUri.toString()));
 //            ivAddPhoto.setImageBitmap(imageBitmap);
             ivAddPhoto.setVisibility(View.VISIBLE);
+
         } else {
             mCurrentPhotoPath = null;
         }
