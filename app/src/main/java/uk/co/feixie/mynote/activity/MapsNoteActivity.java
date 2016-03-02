@@ -42,9 +42,12 @@ public class MapsNoteActivity extends AppCompatActivity implements OnMapReadyCal
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbarMap);
         setSupportActionBar(toolbar);
         ActionBar supportActionBar = getSupportActionBar();
-        supportActionBar.setHomeAsUpIndicator(R.drawable.ic_keyboard_backspace_black_24dp);
-        supportActionBar.setDisplayHomeAsUpEnabled(true);
-        supportActionBar.setTitle("");
+        if (supportActionBar != null) {
+            supportActionBar.setHomeAsUpIndicator(R.drawable.ic_keyboard_backspace_black_24dp);
+            supportActionBar.setDisplayHomeAsUpEnabled(true);
+            supportActionBar.setTitle("");
+        }
+
     }
 
 

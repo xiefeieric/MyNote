@@ -450,13 +450,11 @@ public class MainActivity extends AppCompatActivity {
 
                 if (TextUtils.isEmpty(newText)) {
                     mNoteList = mDbHelper.queryAll();
-                    sortList(mNoteList);
-                    mAdapter.notifyDataSetChanged();
                 } else {
                     mNoteList = mDbHelper.queryName(newText);
-                    sortList(mNoteList);
-                    mAdapter.notifyDataSetChanged();
                 }
+                sortList(mNoteList);
+                mAdapter.notifyDataSetChanged();
                 return true;
             }
         });

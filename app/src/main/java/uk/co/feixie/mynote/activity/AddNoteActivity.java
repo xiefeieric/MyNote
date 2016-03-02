@@ -499,12 +499,12 @@ public class AddNoteActivity extends AppCompatActivity implements
                 selectedImageUri = data.getData();
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                     String path = ImageFilePath.getPath(this, selectedImageUri);
-                    mCurrentPhotoPath = path;
+                    mCurrentPhotoPath = "file:"+path;
 //                    System.out.println("path: "+path);
                     x.image().bind(ivAddPhoto, path);
                 } else {
                     String path = getPath(selectedImageUri);
-                    mCurrentPhotoPath = path;
+                    mCurrentPhotoPath = "file:"+path;
                     x.image().bind(ivAddPhoto, path);
                 }
             }

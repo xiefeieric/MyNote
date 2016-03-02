@@ -151,7 +151,7 @@ public class EditNoteActivity extends AppCompatActivity {
 
                 newTitle = etEditTitle.getText().toString();
                 newContent = etEditContent.getText().toString();
-                String newCategory = acEditCategory.getText().toString();
+                final String newCategory = acEditCategory.getText().toString();
 
                 if (!TextUtils.equals(newTitle, mNote.getTitle()) || !TextUtils.equals(newContent, mNote.getContent())
                         || !TextUtils.isEmpty(mCurrentPhotoPath) || !TextUtils.isEmpty(mCurrentVideoPath) || !TextUtils.equals(newCategory, mNote.getCategory())) {
@@ -159,6 +159,16 @@ public class EditNoteActivity extends AppCompatActivity {
                     mNote.setTitle(newTitle);
                     mNote.setContent(newContent);
                     mNote.setCategory(newCategory);
+
+                    new Thread(){
+                        @Override
+                        public void run() {
+                            boolean inCategory = checkNameInCategory(newCategory);
+                            if (!inCategory && !TextUtils.isEmpty(newCategory)) {
+                                mDbHelper.addCategory(newCategory);
+                            }
+                        }
+                    }.start();
 
                     if (!TextUtils.isEmpty(mCurrentPhotoPath) && !TextUtils.equals(mCurrentPhotoPath, mNote.getImagePath())) {
                         mNote.setImagePath(mCurrentPhotoPath);
@@ -318,8 +328,10 @@ public class EditNoteActivity extends AppCompatActivity {
 
         newTitle = etEditTitle.getText().toString();
         newContent = etEditContent.getText().toString();
+        String newCategory = acEditCategory.getText().toString();
+
         if (!(TextUtils.isEmpty(newTitle) && TextUtils.isEmpty(newContent))) {
-            if (!(newTitle.equals(mNote.getTitle()) && newContent.equals(mNote.getContent()))) {
+            if (!(newTitle.equals(mNote.getTitle()) && newContent.equals(mNote.getContent()) && TextUtils.equals(newCategory,mNote.getCategory()))) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(this);
                 builder.setTitle("Discard?");
                 builder.setMessage("Your changes are not saved. Are you sure you want to discard?");
@@ -435,6 +447,16 @@ public class EditNoteActivity extends AppCompatActivity {
         // Save a file: path for use with ACTION_VIEW intents
         mCurrentPhotoPath = "file:" + image.getAbsolutePath();
         return image;
+    }
+
+    private boolean checkNameInCategory(String name) {
+        List<String> list = mDbHelper.queryAllCategory();
+        for (String category : list) {
+            if (category.equalsIgnoreCase(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

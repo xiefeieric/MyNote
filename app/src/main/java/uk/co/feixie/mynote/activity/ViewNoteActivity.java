@@ -29,7 +29,7 @@ import uk.co.feixie.mynote.model.Note;
 
 public class ViewNoteActivity extends AppCompatActivity {
 
-    public static final int VIEW_REQUEST_CODE = 123;
+    private static final int VIEW_REQUEST_CODE = 123;
     private TextView tvTitle, tvContent;
     private Note mNote;
     private ImageView ivShowPhoto;
