@@ -11,6 +11,8 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.text.SpannableStringBuilder;
@@ -24,6 +26,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -37,21 +40,25 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import uk.co.deanwild.materialshowcaseview.MaterialShowcaseView;
 import uk.co.feixie.mynote.R;
 import uk.co.feixie.mynote.db.DbHelper;
 import uk.co.feixie.mynote.model.Note;
 import uk.co.feixie.mynote.utils.DateUtils;
+import uk.co.feixie.mynote.utils.DividerItemDecoration;
 import uk.co.feixie.mynote.utils.UIUtils;
 
 public class MainActivity extends AppCompatActivity {
 
-    private ListView lvMainContent;
+    public static final String SHOWCASE_ID = "single_case";
+    //    private ListView lvMainContent;
+    private RecyclerView rvMainContent;
     private ListView lvLeftMenu;
     private DrawerLayout dlMenu;
     private Toolbar mToolbar;
     private ActionBarDrawerToggle mDrawerToggle;
     private List<Note> mNoteList;
-    private MyListAdapter mAdapter;
+    private MyRVAdapter mAdapter;
     private DbHelper mDbHelper;
     private ImageView ivToolbar;
     private Note clickedNote;
@@ -60,12 +67,15 @@ public class MainActivity extends AppCompatActivity {
     private MyCategoryAdapter mCategoryAdapter;
     private String selectedCategory;
     private int sortType;
+    private FloatingActionButton mFab;
+    private BitmapUtils mBitmapUtils;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mBitmapUtils = new BitmapUtils(MainActivity.this);
         mNoteList = new ArrayList<>();
         mCategoryList = new ArrayList<>();
         initToolbar();
@@ -74,9 +84,15 @@ public class MainActivity extends AppCompatActivity {
         initListeners();
     }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        MaterialShowcaseView.resetSingleUse(this, SHOWCASE_ID);
+    }
+
     private void initFloatingButton() {
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        mFab = (FloatingActionButton) findViewById(R.id.fab);
+        mFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
@@ -103,27 +119,49 @@ public class MainActivity extends AppCompatActivity {
 
     private void initViews() {
 
-        lvMainContent = (ListView) findViewById(R.id.lvMainContent);
+//        lvMainContent = (ListView) findViewById(R.id.lvMainContent);
+        rvMainContent = (RecyclerView) findViewById(R.id.rvMainContent);
+        rvMainContent.setLayoutManager(new LinearLayoutManager(this));
+        rvMainContent.setHasFixedSize(true);
+        rvMainContent.addItemDecoration(new DividerItemDecoration(this));
+
         lvLeftMenu = (ListView) findViewById(R.id.lvLeftMenu);
         dlMenu = (DrawerLayout) findViewById(R.id.dlMenu);
 
         mDbHelper = new DbHelper(this);
-        mAdapter = new MyListAdapter();
+//        mAdapter = new MyListAdapter();
+        mAdapter = new MyRVAdapter();
+
         new Thread() {
             @Override
             public void run() {
                 mNoteList = mDbHelper.queryAll();
                 sortList(mNoteList);
+//                System.out.println(mNoteList.toString());
                 mCategoryList = mDbHelper.queryAllCategory();
                 Collections.sort(mCategoryList, String.CASE_INSENSITIVE_ORDER);
+
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        lvMainContent.setAdapter(mAdapter);
+                        rvMainContent.setAdapter(mAdapter);
                         mCategoryAdapter = new MyCategoryAdapter();
                         lvLeftMenu.setAdapter(mCategoryAdapter);
+
+//                        System.out.println(mNoteList.size());
+                        if (mNoteList.size() == 0) {
+                            // single showcase
+                            new MaterialShowcaseView.Builder(MainActivity.this)
+                                    .setTarget(mFab)
+                                    .setDismissText("GOT IT")
+                                    .setContentText("Add note to start your amazing journey:)")
+                                    .setDelay(1000) // optional but starting animations immediately in onCreate can make them choppy
+                                    .singleUse(SHOWCASE_ID) // provide a unique ID used to ensure it is only shown once
+                                    .show();
+                        }
+
                         for (int i = 0; i < mCategoryList.size(); i++) {
-                            if (mCategoryList.get(i).equalsIgnoreCase("all notes")){
+                            if (mCategoryList.get(i).equalsIgnoreCase("all notes")) {
                                 lvLeftMenu.setItemChecked(i, true);
                                 return;
                             }
@@ -140,71 +178,71 @@ public class MainActivity extends AppCompatActivity {
 
     private void initListeners() {
 
-        lvMainContent.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Note note = mNoteList.get(position);
-                Intent intent = new Intent(MainActivity.this, ViewNoteActivity.class);
-                intent.putExtra("note", note);
-                startActivity(intent);
-            }
-        });
+//        lvMainContent.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+//            @Override
+//            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+//                Note note = mNoteList.get(position);
+//                Intent intent = new Intent(MainActivity.this, ViewNoteActivity.class);
+//                intent.putExtra("note", note);
+//                startActivity(intent);
+//            }
+//        });
 
-        lvMainContent.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-//                Snackbar.make(view,"onLongClick",Snackbar.LENGTH_SHORT).show();
-                final Note note = mNoteList.get(position);
-                setClickedNote(note);
-//                MyDialogFragment dialogFragment = new MyDialogFragment();
-//                dialogFragment.show(getSupportFragmentManager(), "dialogFragment");
-
-                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                builder.setItems(new CharSequence[]{"Edit", "Delete"}, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        // The 'which' argument contains the index position
-                        // of the selected item
-                        if (which == 0) {
-                            Intent intent = new Intent(MainActivity.this, EditNoteActivity.class);
-                            intent.putExtra("note", note);
-                            startActivity(intent);
-                        }
-
-                        if (which == 1) {
-//                            DbHelper dbHelper = new DbHelper(MainActivity.this);
-//                            System.out.println(note.getId());
-                            new Thread() {
-                                @Override
-                                public void run() {
-                                    boolean delete = mDbHelper.delete(note);
-                                    if (delete) {
-                                        runOnUiThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                UIUtils.showToast(MainActivity.this, "Delete Success.");
-                                                mNoteList.remove(note);
-                                                mAdapter.notifyDataSetChanged();
-                                            }
-                                        });
-                                    } else {
-                                        runOnUiThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                UIUtils.showToast(MainActivity.this, "Delete Fail.");
-                                            }
-                                        });
-                                    }
-                                }
-                            }.start();
-                        }
-                    }
-                });
-
-                builder.show();
-
-                return true;
-            }
-        });
+//        lvMainContent.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+//            @Override
+//            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+////                Snackbar.make(view,"onLongClick",Snackbar.LENGTH_SHORT).show();
+//                final Note note = mNoteList.get(position);
+//                setClickedNote(note);
+////                MyDialogFragment dialogFragment = new MyDialogFragment();
+////                dialogFragment.show(getSupportFragmentManager(), "dialogFragment");
+//
+//                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+//                builder.setItems(new CharSequence[]{"Edit", "Delete"}, new DialogInterface.OnClickListener() {
+//                    public void onClick(DialogInterface dialog, int which) {
+//                        // The 'which' argument contains the index position
+//                        // of the selected item
+//                        if (which == 0) {
+//                            Intent intent = new Intent(MainActivity.this, EditNoteActivity.class);
+//                            intent.putExtra("note", note);
+//                            startActivity(intent);
+//                        }
+//
+//                        if (which == 1) {
+////                            DbHelper dbHelper = new DbHelper(MainActivity.this);
+////                            System.out.println(note.getId());
+//                            new Thread() {
+//                                @Override
+//                                public void run() {
+//                                    boolean delete = mDbHelper.delete(note);
+//                                    if (delete) {
+//                                        runOnUiThread(new Runnable() {
+//                                            @Override
+//                                            public void run() {
+//                                                UIUtils.showToast(MainActivity.this, "Delete Success.");
+//                                                mNoteList.remove(note);
+//                                                mAdapter.notifyDataSetChanged();
+//                                            }
+//                                        });
+//                                    } else {
+//                                        runOnUiThread(new Runnable() {
+//                                            @Override
+//                                            public void run() {
+//                                                UIUtils.showToast(MainActivity.this, "Delete Fail.");
+//                                            }
+//                                        });
+//                                    }
+//                                }
+//                            }.start();
+//                        }
+//                    }
+//                });
+//
+//                builder.show();
+//
+//                return true;
+//            }
+//        });
 
         lvLeftMenu.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -243,7 +281,7 @@ public class MainActivity extends AppCompatActivity {
                             public void onClick(DialogInterface dialog, int which) {
                                 mCategoryList.remove(category);
                                 mCategoryAdapter.notifyDataSetChanged();
-                                new Thread(){
+                                new Thread() {
                                     @Override
                                     public void run() {
                                         mDbHelper.deleteCategory(category);
@@ -337,8 +375,8 @@ public class MainActivity extends AppCompatActivity {
                 String currentTitle = current.getTitle();
                 String afterTitle = after.getTitle();
                 int compare = currentTitle.compareToIgnoreCase(afterTitle);
-                if (compare>0) return 1;
-                else if (compare<0) return -1;
+                if (compare > 0) return 1;
+                else if (compare < 0) return -1;
                 else return 0;
             }
 
@@ -353,8 +391,8 @@ public class MainActivity extends AppCompatActivity {
                 String currentTitle = current.getTitle();
                 String afterTitle = after.getTitle();
                 int compare = currentTitle.compareToIgnoreCase(afterTitle);
-                if (compare<0) return 1;
-                else if (compare>0) return -1;
+                if (compare < 0) return 1;
+                else if (compare > 0) return -1;
                 else return 0;
             }
 
@@ -401,7 +439,7 @@ public class MainActivity extends AppCompatActivity {
                 sortOrder();
 
                 mCategoryList = mDbHelper.queryAllCategory();
-                Collections.sort(mCategoryList,String.CASE_INSENSITIVE_ORDER);
+                Collections.sort(mCategoryList, String.CASE_INSENSITIVE_ORDER);
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -416,11 +454,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sortOrder() {
-        if (sortType==0) {
+        if (sortType == 0) {
             sortList(mNoteList);
-        } else if (sortType==1) {
+        } else if (sortType == 1) {
             sortListAscending(mNoteList);
-        } else if (sortType==2) {
+        } else if (sortType == 2) {
             sortListDescending(mNoteList);
         }
     }
@@ -475,7 +513,7 @@ public class MainActivity extends AppCompatActivity {
 //        }
 
         if (id == R.id.action_apps) {
-            Intent intent = new Intent(this,AppsActivity.class);
+            Intent intent = new Intent(this, AppsActivity.class);
             startActivity(intent);
             overridePendingTransition(android.R.anim.slide_in_left, android.R.anim.fade_out);
             return true;
@@ -491,11 +529,11 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     sortType = which;
-                    if (which==0) {
+                    if (which == 0) {
                         sortList(mNoteList);
-                    } else if (which==1) {
+                    } else if (which == 1) {
                         sortListAscending(mNoteList);
-                    } else if (which==2) {
+                    } else if (which == 2) {
                         sortListDescending(mNoteList);
                     }
                     mAdapter.notifyDataSetChanged();
@@ -522,6 +560,8 @@ public class MainActivity extends AppCompatActivity {
         this.clickedNote = clickedNote;
     }
 
+
+    /*-------------------ListView Adapter-----------------------*/
 
     public class MyListAdapter extends BaseAdapter {
 
@@ -625,4 +665,133 @@ public class MainActivity extends AppCompatActivity {
             return convertView;
         }
     }
+
+    /*-------------------RecyclerView Adapter-----------------------*/
+
+    public class MyViewHolder extends RecyclerView.ViewHolder {
+
+        public TextView tvNoteTitle;
+        public TextView tvNoteContent;
+        public ImageView ivPhoto;
+        public LinearLayout llRvItem;
+
+        public MyViewHolder(View itemView) {
+            super(itemView);
+            tvNoteTitle = (TextView) itemView.findViewById(R.id.tvNoteTitle);
+            tvNoteContent = (TextView) itemView.findViewById(R.id.tvNoteContent);
+            ivPhoto = (ImageView) itemView.findViewById(R.id.ivPhoto);
+
+            llRvItem = (LinearLayout) itemView.findViewById(R.id.llRvItem);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+            llRvItem.setLayoutParams(params);
+            llRvItem.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Note note = mNoteList.get(getAdapterPosition());
+                    Intent intent = new Intent(MainActivity.this, ViewNoteActivity.class);
+                    intent.putExtra("note", note);
+                    startActivity(intent);
+                }
+            });
+            llRvItem.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+
+                    final Note note = mNoteList.get(getAdapterPosition());
+                    setClickedNote(note);
+
+                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                    builder.setItems(new CharSequence[]{"Edit", "Delete"}, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            // The 'which' argument contains the index position
+                            // of the selected item
+                            if (which == 0) {
+                                Intent intent = new Intent(MainActivity.this, EditNoteActivity.class);
+                                intent.putExtra("note", note);
+                                startActivity(intent);
+                            }
+
+                            if (which == 1) {
+//                            DbHelper dbHelper = new DbHelper(MainActivity.this);
+//                            System.out.println(note.getId());
+                                new Thread() {
+                                    @Override
+                                    public void run() {
+                                        boolean delete = mDbHelper.delete(note);
+                                        if (delete) {
+                                            runOnUiThread(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    UIUtils.showToast(MainActivity.this, "Delete Success.");
+                                                    mNoteList.remove(note);
+                                                    mAdapter.notifyDataSetChanged();
+                                                }
+                                            });
+                                        } else {
+                                            runOnUiThread(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    UIUtils.showToast(MainActivity.this, "Delete Fail.");
+                                                }
+                                            });
+                                        }
+                                    }
+                                }.start();
+                            }
+                        }
+                    });
+
+                    builder.show();
+
+                    return true;
+                }
+            });
+        }
+    }
+
+    public class MyRVAdapter extends RecyclerView.Adapter<MyViewHolder> {
+
+        @Override
+        public MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view = View.inflate(MainActivity.this, R.layout.item_list_main, null);
+            return new MyViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(MyViewHolder holder, int position) {
+
+            Note note = mNoteList.get(position);
+            holder.tvNoteTitle.setText(note.getTitle());
+
+            String time = note.getTime();
+            //reformat date to "dd/mm/yyyy"
+            Date date = DateUtils.stringToDate(time);
+            SimpleDateFormat fomatter = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+            String newTime = fomatter.format(date);
+
+            String content = note.getContent();
+            String newContent = newTime + " " + content;
+            //change time's color in textview
+            SpannableStringBuilder style = new SpannableStringBuilder(newContent);
+            style.setSpan(new ForegroundColorSpan(getResources().getColor(R.color.jikelv)), 0, newTime.length(), Spanned.SPAN_EXCLUSIVE_INCLUSIVE);
+            holder.tvNoteContent.setText(style);
+
+            String imagePath = note.getImagePath();
+            if (!TextUtils.isEmpty(imagePath)) {
+                mBitmapUtils.display(holder.ivPhoto, imagePath);
+                holder.ivPhoto.setVisibility(View.VISIBLE);
+            } else {
+                holder.ivPhoto.setVisibility(View.GONE);
+            }
+        }
+
+        @Override
+        public int getItemCount() {
+            if (mNoteList != null) {
+                return mNoteList.size();
+            }
+            return 0;
+        }
+    }
+
 }
